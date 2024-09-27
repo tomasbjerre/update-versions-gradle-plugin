@@ -1,0 +1,419 @@
+plugins {
+    id 'com.gradleup.shadow'
+    id 'maven-publish'
+    id 'signing'
+    id 'io.github.gradle-nexus.publish-plugin'
+    id "com.gradle.plugin-publish"
+}
+
+dependencies {
+  implementation "com.gradle.plugin-publish:com.gradle.plugin-publish.gradle.plugin:1.3.0"
+}
+
+
+def propertyFile = file("$projectDir/gradle.properties")
+def gradleProps = new Properties()
+propertyFile.withReader { gradleProps.load(it) }
+
+// ---- start of default config ----
+def givenConfig = [
+  // repoType: JAR # JAR, GRADLE, COMMAND
+  repoType: gradleProps.getProperty("repoType", "JAR"),
+  // relocate: org:org,com:com # Empty by default
+  relocate: gradleProps.getProperty("relocate", ""),
+  website: gradleProps.getProperty("website", "'https://github.com/tomasbjerre/' + project.name + "),
+  vcsUrl: gradleProps.getProperty("vcsUrl", "'https://github.com/tomasbjerre/'+project.name + "),
+  licenseName: gradleProps.getProperty("licenseName", "'The Apache Software License, Version 2.0'"),
+  licenseUrl: gradleProps.getProperty("licenseUrl", "'http://www.apache.org/licenses/LICENSE-2.0.txt'"),
+  developerId: gradleProps.getProperty("developerId", "'tomasbjerre'"),
+  developerName: gradleProps.getProperty("developerName", "'Tomas Bjerre'"),
+  developerEmail: gradleProps.getProperty("developerEmail", "'tomas.bjerre85@gmail.com'"),
+  mavenRepositoryName: gradleProps.getProperty("mavenRepositoryName", "'nexus'"),
+  mavenRepositoryUrl: gradleProps.getProperty("mavenRepositoryUrl", "'https://oss.sonatype.org/service/local/staging/deploy/maven2/'"),
+  nexusCloseAndRelease: gradleProps.getProperty("relnexusCloseAndReleaseocate", "true"),
+  sign: gradleProps.getProperty("sign", "true") == "true",
+  // tags: a,b,c # Empty by default
+  tags: gradleProps.getProperty("tags", ""),
+  implementationClass: gradleProps.getProperty("implementationClass", ""),
+]
+// ---- end of default config ----
+
+def effectiveConfig = givenConfig + [
+  useShadowJar = !givenConfig.relocate.isEmpty()
+]
+
+logger.lifecycle("Given config: ${givenConfig}")
+logger.info("Effective config: ${effectiveConfig}")
+
+
+def runCommand(args, int attempts = 5) {
+  logger.lifecycle("Executing ${args.join(' ')}")
+  def stdout = new ByteArrayOutputStream()
+  try {
+    exec {
+      commandLine args
+      standardOutput = stdout
+    }
+    return stdout.toString().trim()
+  } catch (e) {
+    def err = stdout.toString().trim() + "\n" + "Command: ${args.join(' ')}" + "\n" + "Trying ${attempts} more times"
+    logger.lifecycle(err)
+    if (attempts == 0) {
+      throw new RuntimeException(err, e)
+    }
+    sleep(5 * 1000)
+    return runCommand(args, attempts - 1)
+  }
+}
+
+def doPost(String url, String authString, String payload, Integer attempts = 20) {
+  logger.lifecycle("> POST ${url} ${payload}")
+  def responseCode = 0
+  def content = ""
+  def responseMessage = ""
+  try {
+    def conn = url.toURL().openConnection()
+    conn.setRequestMethod("POST")
+    conn.setRequestProperty("Authorization", "Basic ${authString}")
+    conn.setRequestProperty("Accept", "application/json")
+    conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+    conn.setDoOutput( true )
+
+    Writer wr = new OutputStreamWriter(conn.outputStream)
+    wr.write(payload);
+    wr.flush()
+    wr.close()
+    conn.connect()
+    responseCode = conn.responseCode
+    content = conn.content
+    responseMessage = conn.responseMessage
+  } catch (e) {
+    // Ignore
+  }
+
+  if(responseCode == 201){
+    logger.lifecycle("OK")
+  } else {
+    logger.error("Content: "+content)
+    def msg = "There was an error with repositories: ${responseCode} ${responseMessage}"
+    if (attempts == 0) {
+      throw new Exception(msg)
+    } else {
+      logger.lifecycle(msg+". ${attempts} left.")
+      sleep(5000)
+      doPost(url, authString, payload, attempts - 1)
+    }
+  }
+}
+
+List<Map> getNexusOpenRepositories(String url, String authString) {
+  def conn = url.toURL().openConnection()
+  conn.setRequestProperty("Authorization", "Basic ${authString}")
+  conn.setRequestProperty("Accept", "application/json")
+
+  if(conn.responseCode != 200){
+    try { logger.lifecycle("Content: "+conn.content) } catch(Exception e) {}
+    throw new Exception("There was an error while retrieving the repositories from Nexus: ${conn.responseCode} ${conn.responseMessage}")
+  }
+  return new groovy.json.JsonSlurper()
+    .parseText( conn.content.text )
+    .data
+    .findAll { it.type=="open" && it.userId==nexusUsername }
+    .collect { it.repositoryId }
+}
+
+/**
+ * Inspired by: https://github.com/adaptivecomputing/plugins-gradle
+ */
+task nexusCloseAndRelease() {
+  doLast {
+    def authString = "${nexusUsername}:${nexusPassword}".getBytes().encodeBase64().toString()
+    URL urlObj = effectiveConfig.mavenRepositoryUrl.toURL()
+    def baseUrl = urlObj.getProtocol()+"://"+urlObj.getAuthority()+"/"
+    def listStagingUrl = baseUrl + "service/local/staging/profile_repositories"
+    def closeStagingUrl = baseUrl + "service/local/staging/bulk/close"
+    def promoteStagingUrl = baseUrl + "service/local/staging/bulk/promote"
+
+    def repositoryIdsToClose = getNexusOpenRepositories(listStagingUrl, authString)
+    if (repositoryIdsToClose.isEmpty()) {
+      logger.lifecycle("No open repositories to close/promote")
+      return
+    }
+
+    logger.lifecycle("Closing ${repositoryIdsToClose}")
+    doPost(
+      closeStagingUrl,
+      authString,
+      "{'data':{'stagedRepositoryIds':[${repositoryIdsToClose.collect { "'"+it+"'" }.join(",")}],'description':''}}"
+    )
+
+    def attempts = 40
+    sleep(10000)
+    while (getNexusOpenRepositories(listStagingUrl, authString).size() > 0 && attempts != 0) {
+      attempts--
+      logger.lifecycle("Waiting for ${repositoryIdsToClose} to be closed... ${attempts} attempts left.")
+      sleep(10000)
+    }
+
+    logger.lifecycle("Promoting (releasing) ${repositoryIdsToClose}")
+    doPost(
+      promoteStagingUrl,
+      authString,
+      "{'data':{'stagedRepositoryIds':[${repositoryIdsToClose.collect { "'"+it+"'" }.join(",")}],'description':''}}"
+    )
+
+    logger.lifecycle("Nexus promotion done.")
+  }
+}
+
+
+task commitNewVersionTask() {
+  doLast {
+    runCommand(['git', 'commit', '-a', '-m', "chore(release): ${version} [GRADLE SCRIPT]"])
+    runCommand(['git', 'push'])
+    runCommand(['git', 'tag', "${version}"])
+    runCommand(['git', 'push', 'origin', "${version}"])
+  }
+}
+
+task commitChangelogTask() {
+  doLast {
+    try {
+      runCommand(['git', 'commit', '-a', '-m', "chore(release): Updating changelog with ${version} [GRADLE SCRIPT]"])
+      runCommand(['git', 'push'])
+    } catch (e) {
+      logger.error("Unable commit/push changelog, skipping that.",e.getMessage())
+    }
+  }
+}
+
+task publishNpm() {
+  doLast {
+    runCommand(['npm', 'publish'])
+  }
+}
+
+def shouldGitIgnore(filename) {
+  if (!file('.gitignore').text.contains(filename)) {
+    throw new RuntimeException("The .gitignore should include '${filename}'")
+  }
+  logger.lifecycle("${filename} is ignored")
+}
+
+task setupNpmJavaRunnerFiles() {
+  doLast {
+    shouldGitIgnore('index.js')
+    copyIfFound("npm-java-runner-index.js", "index.js")
+    shouldGitIgnore('package.json')
+    shouldGitIgnore('package-lock.json')
+    shouldGitIgnore('node_modules')
+    copyIfFound("npm-java-runner-package.json", "package.json")
+    ant.replace(file: new File("package.json"), token: "PKG_NAME", value: project.name)
+    ant.replace(file: new File("package.json"), token: "PKG_VERSION", value: version)
+    ant.replace(file: new File("package.json"), token: "PKG_WEBSITE", value: effectiveConfig.website)
+    ant.replace(file: new File("package.json"), token: "PKG_GIT", value: effectiveConfig.vcsUrl)
+    ant.replace(file: new File("package.json"), token: "PKG_AUTHOR", value: effectiveConfig.developerName)
+    ant.replace(file: new File("package.json"), token: "PKG_DESCRIPTION", value: project.description.replaceAll("[\"']",""))
+  }
+}
+
+task release(type: GradleBuild) {
+  tasks = [
+    'clean',
+    'build',
+    'publish',
+    'publishToMavenLocal',
+    'gitChangelogSemanticVersion',
+    'commitNewVersionTask',
+  ]
+  
+  if (config.repoType == "GRADLE") {
+    tasks += [ "publishPlugins" ]
+  }
+
+  tasks += [
+    'gitChangelog',
+    'commitChangelogTask',
+    'nexusCloseAndRelease'
+  ]
+
+  if (config.repoType == 'COMMAND') {
+    tasks += [
+      "setupNpmJavaRunnerFiles",
+      "publishNpm"
+    ]
+  }
+}
+
+if (effectiveConfig.useShadowJar) {
+  effectiveConfig.relocate.split(',').each { it ->
+    def relocateFrom = ""
+    def relocateTo = ""
+    if (it.contains(":")) {
+      relocateFrom = it.split(":")[0]
+      relocateTo = it.split(":")[1]
+    } else {
+      relocateFrom = it
+      relocateTo = (project.group + '.' + project.name + '.' + relocateFrom)
+      .replaceAll('[^a-zA-Z\\.]','')
+    }
+    logger.lifecycle("Relocating ${relocateFrom} to ${relocateTo}")
+    shadowJar {
+      relocate relocateFrom, relocateTo
+    }
+  }
+  shadowJar {
+    archiveBaseName.set(project.name)
+    archiveClassifier.set('')
+    archiveVersion.set(project.version)
+  }
+  build.dependsOn shadowJar
+} else {
+  logger.lifecycle("Not including shadow jar.")
+}
+
+def pomConfig = {
+  scm {
+    url effectiveConfig.website
+    connection effectiveConfig.vcsUrl
+    developerConnection effectiveConfig.vcsUrl
+  }
+
+  licenses {
+    license {
+      name effectiveConfig.licenseName
+      url effectiveConfig.licenseUrl
+      distribution 'repo'
+    }
+  }
+
+  developers {
+    developer {
+      id effectiveConfig.developerId
+      name effectiveConfig.developerName
+      email effectiveConfig.developerEmail
+    }
+  }
+}
+
+publishing {
+  publications {
+    gradleScriptsPublication(MavenPublication) { publication ->
+      if (effectiveConfig.useShadowJar) {
+        logger.lifecycle("shadow jar in maven publication")
+        project.shadow.component(publication)
+      } else {
+        logger.lifecycle("not using shadow jar in maven publication")
+        from project.components.java
+      }
+      logger.lifecycle("group: ${project.group} name: ${project.name}")
+      groupId project.group.replaceAll("[\"']","")
+      artifactId project.name.replaceAll("[\"']","")
+      version version
+      pom.withXml {
+        def root = asNode()
+        root.appendNode('description', project.description.replaceAll("[\"']",""))
+        root.appendNode('name', project.name)
+        root.appendNode('url', effectiveConfig.website)
+        root.appendNode('inceptionYear', new Date().getYear() + 1900)
+        root.children().last() + pomConfig
+      }
+
+      versionMapping {
+        allVariants {
+          fromResolutionResult()
+        }
+      }
+    }
+
+    if (effectiveConfig.useShadowJar) {
+      logger.lifecycle("shadow jar in maven publication")
+      shadow(MavenPublication) { publication ->
+        project.shadow.component(publication)
+        artifact javadocJar
+        artifact sourcesJar
+
+        logger.lifecycle("group: ${project.group} name: ${project.name}")
+        groupId project.group.replaceAll("[\"']","")
+        artifactId project.name.replaceAll("[\"']","")
+        version version
+        pom.withXml {
+          def root = asNode()
+          root.appendNode('description', project.description.replaceAll("[\"']",""))
+          root.appendNode('name', project.name)
+          root.appendNode('url', effectiveConfig.website)
+          root.appendNode('inceptionYear', new Date().getYear() + 1900)
+          root.children().last() + pomConfig
+        }
+
+        versionMapping {
+          allVariants {
+            fromResolutionResult()
+          }
+        }
+      }
+    }
+  }
+  
+  repositories {
+    maven {
+      name = effectiveConfig.mavenRepositoryName
+      credentials(PasswordCredentials)
+      url = effectiveConfig.mavenRepositoryUrl
+    }
+  }
+}
+
+signing {
+  required { effectiveConfig.sign && gradle.taskGraph.hasTask("publish") }
+  sign publishing.publications.gradleScriptsPublication
+  if (effectiveConfig.useShadowJar) {
+    sign publishing.publications.shadow
+  }
+}
+
+tasks.withType(AbstractPublishToMaven) { publishTask ->
+  tasks.withType(Sign) { signTask ->
+    logger.lifecycle("${publishTask} must run after ${signTask}")
+    publishTask.mustRunAfter(signTask)
+  }
+}
+
+tasks.withType(Sign) { signTask ->
+  tasks.withType(Jar) { jarTask ->
+    logger.lifecycle("${signTask} must run after ${jarTask}")
+    signTask.mustRunAfter(jarTask)
+  }
+}
+
+
+/**
+ * GRADLE
+ */
+if (config.repoType == "GRADLE") {
+  dependencies {
+    implementation gradleApi()
+  }
+
+  def pluginId = (project.group + '.' + project.name)
+    .replaceAll("[\"']","")
+  def displayNameValue = (name.substring(0, 1).toUpperCase() + name.substring(1))
+    .replaceAll('-',' ')
+    .replaceAll("[\"']","")
+  logger.lifecycle("pluginId ${pluginId} displayName ${displayNameValue}")
+  gradlePlugin {
+    website = effectiveConfig.website
+    vcsUrl = effectiveConfig.vcsUrl
+    description = project.description.replaceAll("[\"']","")
+
+    plugins {
+      thePlugin {
+        tags.set(effectiveConfig.tags.split(','))
+        description = project.description.replaceAll("[\"']","")
+        id = pluginId
+        displayName = displayNameValue
+        implementationClass = effectiveConfig.implementationClass
+      }
+    }
+  }
+}

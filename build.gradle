@@ -1,0 +1,42 @@
+plugins {
+    id "groovy-gradle-plugin"
+    id "com.gradle.plugin-publish" version "1.3.0"
+}
+
+gradlePlugin {
+    website = "https://github.com/tomasbjerre/conventional-release-gradle-plugin"
+    vcsUrl = "https://github.com/tomasbjerre/conventional-release-gradle-plugin"
+    plugins {
+        thePlugin {
+            id = "se.bjurr.gradle.conventional-release-gradle-plugin"
+            implementationClass = "SeBjurrGradleConventionalReleaseGradlePlugin"
+            displayName = "Conventional Release Gradle Plugin"
+            description = "Bundle of plugins and some Gradle DSL that can publish to Central, NPM and Plugin Portal"
+            tags.set(["conventional-commits","changelog","publishing","release"])
+        }
+    }
+}
+
+
+/**
+ * Update README with config
+ */
+def mainGradle = 'src/main/groovy/se.bjurr.gradle.conventional-release-gradle-plugin.gradle'
+
+def mainGradleContent = file(mainGradle).text
+def defaultConfigStart = "// ---- start of default config ----"
+def defaultConfigEnd = "// ---- end of default config ----"
+def defaultConfig = mainGradleContent.substring(mainGradleContent.indexOf(defaultConfigStart)+defaultConfigStart.size())
+defaultConfig = defaultConfig.substring(0, defaultConfig.indexOf(defaultConfigEnd))
+
+def readmeContent = file('README.md').text
+def readmeContentStart = "<!-- start default config -->"
+def readmeContentEnd = "<!-- end default config -->"
+def readmeContentFirstPart = readmeContent.split(readmeContentStart)[0]
+def readmeContentSecondPart = readmeContent.split(readmeContentEnd)[1]
+def newReadmeContent = """${readmeContentFirstPart}${readmeContentStart}
+```groovy
+${defaultConfig}
+```
+${readmeContentEnd}${readmeContentSecondPart}"""
+file('README.md').write(newReadmeContent)
