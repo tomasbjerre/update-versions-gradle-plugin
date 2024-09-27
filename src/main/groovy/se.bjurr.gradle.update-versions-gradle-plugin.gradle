@@ -1,0 +1,100 @@
+plugins {
+  id "com.github.ben-manes.versions"
+}
+
+dependencies {
+  implementation "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin:0.51.0"
+}
+
+def propertyFile = file("$projectDir/gradle.properties")
+def gradleProps = new Properties()
+propertyFile.withReader { gradleProps.load(it) }
+
+// ---- start of default config ----
+def givenConfig = [
+  // ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
+  ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
+]
+// ---- end of default config ----
+
+
+def getUpdatableDependencies(dependencies) {
+  dependencies
+    .findAll {
+      !"${it.d.group}:${it.d.name}:${it.d.version}"
+        .matches(givenConfig.ignoreDependenciesRegexp)
+    }
+    .collect {
+      [
+        d: it,
+        newVersion: it.available.release ?: (it.available.milestone ?: it.available.integration)
+      ]
+    }
+    .collect {
+      [
+        prettyPrint: "${it.d.group}:${it.d.name}:${it.d.version} -> ${it.newVersion}",
+        newVersion: it.newVersion,
+        compactFrom: "[\"']${it.d.group}:${it.d.name}:${it.d.version}[\"']",
+        compactTo: "'${it.d.group}:${it.d.name}:${it.newVersion}'",
+        verboseFrom: "group:\s*[\"']${it.d.group}[\"'],\s*name:\s*[\"']${it.d.name}[\"'],\s*version:\s*[\"']${it.d.version}[\"']"
+      ]
+    }
+}
+
+def isNonStable(v) {
+  def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> v.candidate.version.toUpperCase().contains(it) }
+  def stableVersion = v.candidate.version ==~ /^[0-9,.v-]+(-r)?$/
+  return !stableKeyword && !stableVersion
+}
+
+task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
+  checkForGradleUpdate = false
+  dependencyUpdates.gradleReleaseChannel = "current"
+  rejectVersionIf { isNonStable(it) }
+  outputFormatter = { result ->
+    def updatable = getUpdatableDependencies(result.outdated.dependencies)
+    if (updatable.isEmpty()) {
+      println """\
+
+      All dependencies are up-to-date.
+      """.stripIndent()
+    } else {
+      println "\nThere are dependencies that can be updated:\n"
+      updatable.each { dependency->
+        println "  ${dependency.prettyPrint}"
+      }
+      println """\
+
+      Update dependencies with:
+
+      ./gradlew updateDependencies
+      """.stripIndent()
+    }
+  }
+}
+
+task updateDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
+  checkForGradleUpdate = false
+  dependencyUpdates.gradleReleaseChannel = "current"
+  rejectVersionIf { isNonStable(it) }
+  outputFormatter = { result ->
+    def updatable = getUpdatableDependencies(result.outdated.dependencies)
+    if (!updatable.isEmpty()) {
+      def buildGradleFile = new File("$rootDir/build.gradle")
+      def buildGradleContent = buildGradleFile.text
+      println "\nStepping dependencies:\n"
+      updatable.each { dependency->
+        println "  ${dependency.prettyPrint}"
+        [dependency.compactFrom, dependency.verboseFrom].each { from ->
+          buildGradleContent = java.util.regex.Pattern.compile(from, java.util.regex.Pattern.DOTALL)
+            .matcher(buildGradleContent)
+            .replaceAll(dependency.compactTo)
+        }
+      }
+      println "\nWriting ${buildGradleFile}"
+      buildGradleFile.text = buildGradleContent
+    }
+  }
+}
+
+tasks.named("build") { finalizedBy("showUpdateableDependencies") }
