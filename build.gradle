@@ -16,7 +16,7 @@ apply plugin: "groovy-gradle-plugin"
 /**
  * Update README with config
  */
-def mainGradle = 'src/main/groovy/se.bjurr.gradle.update-versions-gradle-plugin.gradle'
+def mainGradle = 'src/main/groovy/se.bjurr.gradle.update-versions.gradle'
 
 def mainGradleContent = file(mainGradle).text
 def defaultConfigStart = "// ---- start of default config ----"
