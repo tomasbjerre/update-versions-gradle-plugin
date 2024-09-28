@@ -2,10 +2,6 @@ plugins {
   id "com.github.ben-manes.versions"
 }
 
-dependencies {
-  implementation "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin:0.51.0"
-}
-
 def propertyFile = file("$projectDir/gradle.properties")
 def gradleProps = new Properties()
 propertyFile.withReader { gradleProps.load(it) }

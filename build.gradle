@@ -12,6 +12,15 @@ buildscript {
 apply plugin: "se.bjurr.gradle.conventional-release"
 apply plugin: "groovy-gradle-plugin"
 
+repositories {
+  gradlePluginPortal()
+  mavenCentral()
+  mavenLocal()
+}
+
+dependencies {
+  implementation "com.github.ben-manes:gradle-versions-plugin:0.51.0"
+}
 
 /**
  * Update README with config
