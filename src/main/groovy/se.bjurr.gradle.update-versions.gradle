@@ -2,33 +2,37 @@ plugins {
 	id "com.github.ben-manes.versions"
 }
 
-def propertyFile = file("$projectDir/gradle.properties")
-def gradleProps = new Properties()
-propertyFile.withReader { gradleProps.load(it) }
+def getGivenConfigUpdateVersions() {
+	def propertyFile = file("$projectDir/gradle.properties")
+	def gradleProps = new Properties()
+	propertyFile.withReader { gradleProps.load(it) }
+	def givenConfig = [
+		// ---- start of default config ----
+		// ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
+		ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
+		// ---- end of default config ----
+	]
+	return givenConfig
+}
 
-// ---- start of default config ----
-def givenConfig = [
-	// ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
-	ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
-]
-// ---- end of default config ----
+def getEffectiveConfigUpdateVersions() {
+	return getGivenConfigUpdateVersions() + []
+}
 
-def effectiveConfig = givenConfig + []
-
-logger.lifecycle("Given config: ${givenConfig}")
-logger.info("Effective config: ${effectiveConfig}")
+logger.info("Update Versions: Given config: ${getGivenConfigUpdateVersions()}")
+logger.info("Update Versions: Effective config: ${getEffectiveConfigUpdateVersions()}")
 
 def getUpdatableDependencies(dependencies) {
 	dependencies
-			.findAll {
-				!"${it.d.group}:${it.d.name}:${it.d.version}"
-						.matches(effectiveConfig.ignoreDependenciesRegexp)
-			}
 			.collect {
 				[
 					d: it,
 					newVersion: it.available.release ?: (it.available.milestone ?: it.available.integration)
 				]
+			}
+			.findAll {
+				!"${it.d.group}:${it.d.name}:${it.d.version}"
+						.matches(getEffectiveConfigUpdateVersions().ignoreDependenciesRegexp)
 			}
 			.collect {
 				[
