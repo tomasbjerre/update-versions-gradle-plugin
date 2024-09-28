@@ -43,12 +43,28 @@ def getUpdatableDependencies(dependencies) {
 					verboseFrom: "group:\\s*[\"']${it.d.group}[\"'],\\s*name:\\s*[\"']${it.d.name}[\"'],\\s*version:\\s*[\"']${it.d.version}[\"']"
 				]
 			}
+			.findAll {
+				def buildGradleContent = getBuildGradleContent()
+				[
+					it.compactFrom,
+					it.verboseFrom
+				].find {
+					java.util.regex.Pattern.compile(it, java.util.regex.Pattern.DOTALL)
+							.matcher(buildGradleContent)
+							.find()
+				}
+			}
 }
 
 def isNonStable(v) {
 	def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> v.candidate.version.toUpperCase().contains(it) }
 	def stableVersion = v.candidate.version ==~ /^[0-9,.v-]+(-r)?$/
 	return !stableKeyword && !stableVersion
+}
+
+def getBuildGradleContent() {
+	def buildGradleFile = new File("$rootDir/build.gradle")
+	return buildGradleFile.text
 }
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
@@ -84,8 +100,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	outputFormatter = { result ->
 		def updatable = getUpdatableDependencies(result.outdated.dependencies)
 		if (!updatable.isEmpty()) {
-			def buildGradleFile = new File("$rootDir/build.gradle")
-			def buildGradleContent = buildGradleFile.text
+			def buildGradleContent = getBuildGradleContent()
 			println "\nStepping dependencies:\n"
 			updatable.each { dependency->
 				println "  ${dependency.prettyPrint}"
