@@ -13,12 +13,16 @@ def givenConfig = [
 ]
 // ---- end of default config ----
 
+def effectiveConfig = givenConfig + []
+
+logger.lifecycle("Given config: ${givenConfig}")
+logger.info("Effective config: ${effectiveConfig}")
 
 def getUpdatableDependencies(dependencies) {
 	dependencies
 			.findAll {
 				!"${it.d.group}:${it.d.name}:${it.d.version}"
-						.matches(givenConfig.ignoreDependenciesRegexp)
+						.matches(effectiveConfig.ignoreDependenciesRegexp)
 			}
 			.collect {
 				[

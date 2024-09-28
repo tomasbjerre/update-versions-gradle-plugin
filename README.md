@@ -19,8 +19,8 @@ It can be tweaked in `gradle.properties` with some properties:
 ```groovy
 
 def givenConfig = [
-  // ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
-  ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
+	// ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
+	ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
 ]
 
 ```
