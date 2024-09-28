@@ -24,7 +24,7 @@ dependencies {
 	implementation "com.github.ben-manes:gradle-versions-plugin:0.51.0"
 }
 
-check.dependsOn spotlessApply
+processResources.dependsOn spotlessApply
 
 spotless {
 	groovyGradle {
