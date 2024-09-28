@@ -42,7 +42,7 @@ def mainGradleContent = file(mainGradle).text
 def defaultConfigStart = "// ---- start of default config ----"
 def defaultConfigEnd = "// ---- end of default config ----"
 def defaultConfig = mainGradleContent.substring(mainGradleContent.indexOf(defaultConfigStart)+defaultConfigStart.size())
-defaultConfig = defaultConfig.substring(0, defaultConfig.indexOf(defaultConfigEnd))
+defaultConfig = defaultConfig.substring(0, defaultConfig.indexOf(defaultConfigEnd)).stripIndent()
 
 def readmeContent = file('README.md').text
 def readmeContentStart = "<!-- start default config -->"
