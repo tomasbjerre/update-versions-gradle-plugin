@@ -7,11 +7,11 @@ Uses [gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugi
 
 ```groovy
 plugins {
-    id 'se.bjurr.gradle.update-versions-gradle-plugin' version 'X'
+    id 'se.bjurr.gradle.update-versions' version 'X'
 }
 ```
 
-https://plugins.gradle.org/plugin/se.bjurr.gradle.update-versions-gradle-plugin
+<https://plugins.gradle.org/plugin/se.bjurr.gradle.update-versions>
 
 It can be tweaked in `gradle.properties` with some properties:
 
