@@ -3,7 +3,7 @@ plugins {
 }
 
 def getGivenConfigUpdateVersions() {
-	def propertyFile = file("$projectDir/gradle.properties")
+	def propertyFile = file("$rootDir/gradle.properties")
 	def gradleProps = new Properties()
 	propertyFile.withReader { gradleProps.load(it) }
 	def givenConfig = [
