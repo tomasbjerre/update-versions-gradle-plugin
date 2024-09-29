@@ -7,7 +7,7 @@ Uses [gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugi
 - `./gradlew showUpdateableDependencies` - Print list of dependencies that can be updated.
 - `./gradlew updateDependencies` - Update dependencies that can be updated.
 
-It can be tweaked in `gradle.properties` with some properties:
+It can be tweaked in `gradle.properties` with some properties, the plugin reads them like this:
 
 <!-- start default config -->
 ```groovy
