@@ -13,7 +13,7 @@ It can be tweaked in `gradle.properties` with some properties, the plugin reads 
 ```groovy
 
 // ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
-ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
+ignoreDependenciesRegexp: project.getProperties().getOrDefault("ignoreDependenciesRegexp", ""),
 
 ```
 <!-- end default config -->

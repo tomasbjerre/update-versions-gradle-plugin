@@ -3,13 +3,10 @@ plugins {
 }
 
 def getGivenConfigUpdateVersions() {
-	def propertyFile = file("$rootDir/gradle.properties")
-	def gradleProps = new Properties()
-	propertyFile.withReader { gradleProps.load(it) }
 	def givenConfig = [
 		// ---- start of default config ----
 		// ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
-		ignoreDependenciesRegexp: gradleProps.getProperty("ignoreDependenciesRegexp", ""),
+		ignoreDependenciesRegexp: project.getProperties().getOrDefault("ignoreDependenciesRegexp", ""),
 		// ---- end of default config ----
 	]
 	return givenConfig
