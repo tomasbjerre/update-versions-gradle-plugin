@@ -4,10 +4,10 @@ plugins {
 
 def getGivenConfigUpdateVersions() {
 	def givenConfig = [
-		// ---- start of default config ----
+		// ---- default config ----
 		// ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
 		ignoreDependenciesRegexp: project.getProperties().getOrDefault("ignoreDependenciesRegexp", ""),
-		// ---- end of default config ----
+		// ---- default config ----
 	]
 	return givenConfig
 }

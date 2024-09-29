@@ -36,22 +36,11 @@ spotless {
 /**
  * Update README with config
  */
-def mainGradle = 'src/main/groovy/se.bjurr.gradle.update-versions.gradle'
-
-def mainGradleContent = file(mainGradle).text
-def defaultConfigStart = "// ---- start of default config ----"
-def defaultConfigEnd = "// ---- end of default config ----"
-def defaultConfig = mainGradleContent.substring(mainGradleContent.indexOf(defaultConfigStart)+defaultConfigStart.size())
-defaultConfig = defaultConfig.substring(0, defaultConfig.indexOf(defaultConfigEnd)).stripIndent()
-
-def readmeContent = file('README.md').text
-def readmeContentStart = "<!-- start default config -->"
-def readmeContentEnd = "<!-- end default config -->"
-def readmeContentFirstPart = readmeContent.split(readmeContentStart)[0]
-def readmeContentSecondPart = readmeContent.split(readmeContentEnd)[1]
-def newReadmeContent = """${readmeContentFirstPart}${readmeContentStart}
-```groovy
-${defaultConfig}
-```
-${readmeContentEnd}${readmeContentSecondPart}"""
-file('README.md').write(newReadmeContent)
+def defaultConfig = file('src/main/groovy/se.bjurr.gradle.update-versions.gradle')
+		.text
+		.takeBetween('// ---- default config ----')
+		.stripIndent()
+def newReadme = file('README.md')
+		.text
+		.replaceAll("(?s)(.*// ---- default config ----).*(// ---- default config ----.*)", "\$1$defaultConfig\$2")
+file('README.md').write(newReadme)
