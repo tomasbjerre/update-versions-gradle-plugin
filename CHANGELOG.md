@@ -2,6 +2,13 @@
 
 Changelog of updateable-versions-gradle-plugin.
 
+## 0.1.3 (2024-10-01)
+
+### Bug Fixes
+
+-  do not publish to plugin portal ([d15be](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/d15be29d536507a) Tomas Bjerre)  
+-  trigger new version ([e05b9](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/e05b9844e1fa6c0) Tomas Bjerre)  
+
 ## 0.1.2 (2024-10-01)
 
 ### Bug Fixes
