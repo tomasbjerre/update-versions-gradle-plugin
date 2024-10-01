@@ -2,6 +2,26 @@
 
 Changelog of updateable-versions-gradle-plugin.
 
+## 0.1.2 (2024-10-01)
+
+### Bug Fixes
+
+-  trigger new version ([f716e](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/f716e9dfb6b552e) Tomas Bjerre)  
+
+## 0.1.1 (2024-10-01)
+
+### Features
+
+-  only direct dependencies in build.gradle ([7c9bc](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/7c9bcad91a63736) Tomas Bjerre)  
+-  log effective config ([83501](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/8350187c23df6b5) Tomas Bjerre)  
+-  repoType GRADLE ([9b98e](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/9b98e4e09a13165) Tomas Bjerre)  
+
+### Bug Fixes
+
+-  rootProject ([58c69](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/58c69f7a6ca3383) Tomas Bjerre)  
+-  avoid global variables ([b5e81](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/b5e813de66ecb6c) Tomas Bjerre)  
+-  add dependencies ([2ed46](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/2ed46388ba0b2ea) Tomas Bjerre)  
+
 ## 0.0.1 (2024-09-28)
 
 ### Other changes
