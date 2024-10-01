@@ -2,6 +2,12 @@
 
 Changelog of updateable-versions-gradle-plugin.
 
+## 0.1.5 (2024-10-01)
+
+### Bug Fixes
+
+-  avoid duplicate staging repositories ([1c79d](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/1c79df45c32be18) Tomas Bjerre)  
+
 ## 0.1.4 (2024-10-01)
 
 ### Bug Fixes
