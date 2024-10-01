@@ -3,7 +3,7 @@
  */
 plugins {
 	id "groovy-gradle-plugin"
-	id "se.bjurr.gradle.conventional-release" version "0.1.12"
+	id "se.bjurr.gradle.conventional-release" version "0.+"
 	id "com.diffplug.spotless" version "6.25.0"
 }
 
