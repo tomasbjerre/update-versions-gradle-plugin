@@ -1,27 +1,23 @@
-buildscript {
-	repositories {
-		maven { url "https://plugins.gradle.org/m2/" }
-		mavenCentral()
-		mavenLocal()
-	}
-	dependencies {
-		classpath "se.bjurr.gradle:conventional-release-gradle-plugin:latest-SNAPSHOT"
-		classpath "com.diffplug.spotless:spotless-plugin-gradle:6.25.0"
-	}
+/**
+ * Used when working with this plugin.
+ */
+plugins {
+	id "groovy-gradle-plugin"
+	id "se.bjurr.gradle.conventional-release" version "0.1.12"
+	id "com.diffplug.spotless" version "6.25.0"
 }
 
-apply plugin: "se.bjurr.gradle.conventional-release"
-apply plugin: "groovy-gradle-plugin"
-apply plugin: "com.diffplug.spotless"
+/**
+ * Dependencies needed by the plugin in src/main/groovy
+ */
+dependencies {
+	implementation "com.github.ben-manes:gradle-versions-plugin:0.51.0"
+}
 
 repositories {
 	gradlePluginPortal()
 	mavenCentral()
 	mavenLocal()
-}
-
-dependencies {
-	implementation "com.github.ben-manes:gradle-versions-plugin:0.51.0"
 }
 
 processResources.dependsOn spotlessApply
