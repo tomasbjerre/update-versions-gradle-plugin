@@ -2,6 +2,12 @@
 
 Changelog of updateable-versions-gradle-plugin.
 
+## 0.1.4 (2024-10-01)
+
+### Bug Fixes
+
+-  trigger new version ([9cad0](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/9cad058841dc4a9) Tomas Bjerre)  
+
 ## 0.1.3 (2024-10-01)
 
 ### Bug Fixes
