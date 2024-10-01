@@ -2,6 +2,12 @@
 
 Changelog of updateable-versions-gradle-plugin.
 
+## 0.2.0 (2024-10-01)
+
+### Features
+
+-  Java 17 ([11877](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/11877eb99ee3455) Tomas Bjerre)  
+
 ## 0.1.6 (2024-10-01)
 
 ### Bug Fixes
