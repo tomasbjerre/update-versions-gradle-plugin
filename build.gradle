@@ -20,6 +20,9 @@ repositories {
 	mavenLocal()
 }
 
+sourceCompatibility = 17
+targetCompatibility = 17
+
 processResources.dependsOn spotlessApply
 
 spotless {
