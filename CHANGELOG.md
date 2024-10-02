@@ -1,3 +1,9 @@
+## 0.2.1 (2024-10-02)
+
+### Bug Fixes
+
+-  prepend to changelog ([cd5ed](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/cd5ed2818dd4529) Tomas Bjerre)  
+
 
 ## 0.2.0 (2024-10-01)
 
