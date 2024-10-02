@@ -1,6 +1,3 @@
-# updateable-versions-gradle-plugin changelog
-
-Changelog of updateable-versions-gradle-plugin.
 
 ## 0.2.0 (2024-10-01)
 
