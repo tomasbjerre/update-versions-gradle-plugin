@@ -1,3 +1,9 @@
+## Unreleased ()
+
+### Bug Fixes
+
+-  NPE when buildGradleFile not set ([1e46a](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/1e46a7c538d62e4) Tomas Bjerre)  
+
 ## 0.2.1 (2024-10-02)
 
 ### Bug Fixes
