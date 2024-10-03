@@ -41,7 +41,7 @@ def getUpdatableDependencies(dependencies) {
 				]
 			}
 			.findAll {
-				def buildGradleContent = getBuildGradleContent()
+				def buildGradleContent = getBuildGradleFile().text
 				[
 					it.compactFrom,
 					it.verboseFrom
@@ -59,9 +59,8 @@ def isNonStable(v) {
 	return !stableKeyword && !stableVersion
 }
 
-def getBuildGradleContent() {
-	def buildGradleFile = new File("$rootDir/build.gradle")
-	return buildGradleFile.text
+def getBuildGradleFile() {
+	new File("$rootDir/build.gradle")
 }
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
@@ -97,7 +96,8 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	outputFormatter = { result ->
 		def updatable = getUpdatableDependencies(result.outdated.dependencies)
 		if (!updatable.isEmpty()) {
-			def buildGradleContent = getBuildGradleContent()
+			def buildGradleFile = getBuildGradleFile()
+			def buildGradleContent = buildGradleFile.text
 			println "\nStepping dependencies:\n"
 			updatable.each { dependency->
 				println "  ${dependency.prettyPrint}"
