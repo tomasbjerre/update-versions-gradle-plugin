@@ -27,3 +27,5 @@ It can be tweaked in `gradle.properties` with some properties, the plugin reads 
 ignoreDependenciesRegexp: project.getProperties().getOrDefault("ignoreDependenciesRegexp", ""),
 // ---- default config ----
 ```
+
+Works great with https://github.com/tomasbjerre/conventional-release-gradle-plugin
