@@ -19,17 +19,12 @@ It adds these tasks:
 - `./gradlew showUpdateableDependencies` - Print list of dependencies that can be updated.
 - `./gradlew updateDependencies` - Update dependencies that can be updated.
 
-It can be tweaked with `updateVersions { /* config here */ }`:
+It can be tweaked:
 
 ```groovy
-// ---- default config ----
-interface UpdateVersionsPluginExtension {
-	Property<String> getIgnoreDependenciesRegexp()
+updateVersions {
+  ignoreDependenciesRegexp.set("anything matching this regexp will be ignored")
 }
-
-def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
-extension.ignoreDependenciesRegexp.convention("")
-// ---- default config ----
 ```
 
 Works great with https://github.com/tomasbjerre/conventional-release-gradle-plugin

@@ -31,15 +31,3 @@ spotless {
 }
 
 processResources.dependsOn spotlessApply
-
-/**
- * Update README with config
- */
-def defaultConfig = file('src/main/groovy/se.bjurr.gradle.update-versions.gradle')
-		.text
-		.takeBetween('// ---- default config ----')
-		.stripIndent()
-def newReadme = file('README.md')
-		.text
-		.replaceAll("(?s)(.*// ---- default config ----).*(// ---- default config ----.*)", "\$1$defaultConfig\$2")
-file('README.md').write(newReadme)
