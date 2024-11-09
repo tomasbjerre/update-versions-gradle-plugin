@@ -21,7 +21,7 @@ def getUpdatableDependencies(dependencies,ignoreDependenciesRegexp) {
 			}
 			.findAll {
 				!"${it.d.group}:${it.d.name}:${it.d.version}"
-						.matches(ignoreDependenciesRegexp.get())
+						.matches(ignoreDependenciesRegexp)
 			}
 			.collect {
 				[
@@ -60,7 +60,7 @@ task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.update
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		def updatable = getUpdatableDependencies(result.outdated.dependencies,ignoreDependenciesRegexp)
+		def updatable = getUpdatableDependencies(result.outdated.dependencies,extension.ignoreDependenciesRegexp.get())
 		if (updatable.isEmpty()) {
 			println """\
 
@@ -86,7 +86,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		def updatable = getUpdatableDependencies(result.outdated.dependencies,ignoreDependenciesRegexp)
+		def updatable = getUpdatableDependencies(result.outdated.dependencies,extension.ignoreDependenciesRegexp.get())
 		if (!updatable.isEmpty()) {
 			def buildGradleFile = getBuildGradleFile()
 			def buildGradleContent = buildGradleFile.text
