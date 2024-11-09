@@ -4,6 +4,12 @@
 
 -  triggering new version ([da025](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/da025f17a8618ed) Tomas Bjerre)  
 
+## 0.3.2 (2024-11-09)
+
+### Bug Fixes
+
+-  triggering new version ([da025](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/da025f17a8618ed) Tomas Bjerre)  
+
 ## Unreleased ()
 
 ### Bug Fixes
