@@ -21,7 +21,7 @@ def getUpdatableDependencies(dependencies) {
 			}
 			.findAll {
 				!"${it.d.group}:${it.d.name}:${it.d.version}"
-						.matches(extension.ignoreDependenciesRegexp.get())
+						.matches(ignoreDependenciesRegexp.get())
 			}
 			.collect {
 				[
