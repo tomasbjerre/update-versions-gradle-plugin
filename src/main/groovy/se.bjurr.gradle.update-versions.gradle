@@ -2,22 +2,14 @@ plugins {
 	id "com.github.ben-manes.versions"
 }
 
-def getGivenConfigUpdateVersions() {
-	def givenConfig = [
-		// ---- default config ----
-		// ignoreDependenciesRegexp: (jakarta\.inject|jakarta\.servlet).*
-		ignoreDependenciesRegexp: project.getProperties().getOrDefault("ignoreDependenciesRegexp", ""),
-		// ---- default config ----
-	]
-	return givenConfig
+// ---- default config ----
+interface UpdateVersionsPluginExtension {
+	Property<String> getIgnoreDependenciesRegexp()
 }
 
-def getEffectiveConfigUpdateVersions() {
-	return getGivenConfigUpdateVersions() + []
-}
-
-logger.info("Update Versions: Given config: ${getGivenConfigUpdateVersions()}")
-logger.info("Update Versions: Effective config: ${getEffectiveConfigUpdateVersions()}")
+def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
+extension.ignoreDependenciesRegexp.convention("")
+// ---- default config ----
 
 def getUpdatableDependencies(dependencies) {
 	dependencies
@@ -29,7 +21,7 @@ def getUpdatableDependencies(dependencies) {
 			}
 			.findAll {
 				!"${it.d.group}:${it.d.name}:${it.d.version}"
-						.matches(getEffectiveConfigUpdateVersions().ignoreDependenciesRegexp)
+						.matches(extension.ignoreDependenciesRegexp.get())
 			}
 			.collect {
 				[

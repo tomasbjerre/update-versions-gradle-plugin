@@ -19,12 +19,16 @@ It adds these tasks:
 - `./gradlew showUpdateableDependencies` - Print list of dependencies that can be updated.
 - `./gradlew updateDependencies` - Update dependencies that can be updated.
 
-It can be tweaked in `gradle.properties` with some properties, the plugin reads them like this:
+It can be tweaked with `updateVersions { /* config here */ }`:
 
 ```groovy
 // ---- default config ----
-// ignoreDependenciesRegexp: (jakarta.inject|jakarta.servlet).*
-ignoreDependenciesRegexp: project.getProperties().getOrDefault("ignoreDependenciesRegexp", ""),
+interface UpdateVersionsPluginExtension {
+	Property<String> getIgnoreDependenciesRegexp()
+}
+
+def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
+extension.ignoreDependenciesRegexp.convention("")
 // ---- default config ----
 ```
 
