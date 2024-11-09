@@ -11,7 +11,7 @@ def extension = project.extensions.create("updateVersions", UpdateVersionsPlugin
 extension.ignoreDependenciesRegexp.convention("")
 // ---- default config ----
 
-def getUpdatableDependencies(dependencies) {
+def getUpdatableDependencies(dependencies,ignoreDependenciesRegexp) {
 	dependencies
 			.collect {
 				[
@@ -60,7 +60,7 @@ task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.update
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		def updatable = getUpdatableDependencies(result.outdated.dependencies)
+		def updatable = getUpdatableDependencies(result.outdated.dependencies,ignoreDependenciesRegexp)
 		if (updatable.isEmpty()) {
 			println """\
 
@@ -86,7 +86,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		def updatable = getUpdatableDependencies(result.outdated.dependencies)
+		def updatable = getUpdatableDependencies(result.outdated.dependencies,ignoreDependenciesRegexp)
 		if (!updatable.isEmpty()) {
 			def buildGradleFile = getBuildGradleFile()
 			def buildGradleContent = buildGradleFile.text
