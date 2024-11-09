@@ -1,3 +1,9 @@
+## 0.3.4 (2024-11-09)
+
+### Bug Fixes
+
+-  trying to fix reading extension ([8f93e](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/8f93e82e79ab369) Tomas Bjerre)  
+
 ## 0.3.2 (2024-11-09)
 
 ### Bug Fixes
