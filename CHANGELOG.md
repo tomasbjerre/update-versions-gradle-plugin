@@ -1,3 +1,9 @@
+## Unreleased ()
+
+### Breaking changes
+
+-  gradle 9.0.0 (#1) ([a5f93](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/a5f93e9906e8d46) Jens Karlsson)  
+
 ## 0.3.4 (2024-11-09)
 
 ### Bug Fixes
