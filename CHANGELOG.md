@@ -4,13 +4,7 @@
 
 -  kotlin support ([f0e1e](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/f0e1e81f4710164) Tomas Bjerre)  [#2](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/issues/2)  
 
-## Unreleased ()
-
-### Features
-
--  kotlin support ([f0e1e](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/f0e1e81f4710164) Tomas Bjerre)  [#2](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/issues/2)  
-
-## Unreleased ()
+## 1.0.0
 
 ### Breaking changes
 
