@@ -28,7 +28,7 @@ def getUpdatableDependencies(dependencies,ignoreDependenciesRegexp) {
 					prettyPrint: "${it.d.group}:${it.d.name}:${it.d.version} -> ${it.newVersion}",
 					newVersion: it.newVersion,
 					compactFrom: "[\"']${it.d.group}:${it.d.name}:${it.d.version}[\"']",
-					compactTo: "'${it.d.group}:${it.d.name}:${it.newVersion}'",
+					compactTo: "\"${it.d.group}:${it.d.name}:${it.newVersion}\"",
 					verboseFrom: "group:\\s*[\"']${it.d.group}[\"'],\\s*name:\\s*[\"']${it.d.name}[\"'],\\s*version:\\s*[\"']${it.d.version}[\"']"
 				]
 			}
@@ -52,7 +52,15 @@ def isNonStable(v) {
 }
 
 def getBuildGradleFile() {
-	new File("$rootDir/build.gradle")
+	File gradleFile = new File("$rootDir/build.gradle")
+	File gradleKtsFile = new File("$rootDir/build.gradle.kts")
+	if (gradleFile.exists()) {
+		return gradleFile
+	} else if (gradleKtsFile.exists()) {
+		return gradleKtsFile
+	} else {
+		throw new FileNotFoundException("Could not find build.gradle or build.gradle.kts in $rootDir")
+	}
 }
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {

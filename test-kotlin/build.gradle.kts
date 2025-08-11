@@ -1,0 +1,17 @@
+plugins {
+	id("java-library")
+	id("se.bjurr.gradle.update-versions") version "latest-SNAPSHOT"
+}
+
+dependencies {
+	/**
+	 * These should be updated by the plugin.
+	 */
+	implementation("se.bjurr.violations:violations-lib:1.0.0")
+}
+
+repositories {
+	gradlePluginPortal()
+	mavenCentral()
+	mavenLocal()
+}
