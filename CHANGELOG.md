@@ -1,3 +1,8 @@
+## 1.1.1 (2025-08-11)
+
+### Dependency updates
+
+- gradle-8.14.3 ([80e31](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/80e3115f7c40f44) Tomas Bjerre)  
 ## 1.1.0 (2025-08-11)
 
 ### Features
