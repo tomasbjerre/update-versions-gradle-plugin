@@ -52,15 +52,7 @@ def isNonStable(v) {
 }
 
 def getBuildGradleFile() {
-	File gradleFile = new File("$rootDir/build.gradle")
-	File gradleKtsFile = new File("$rootDir/build.gradle.kts")
-	if (gradleFile.exists()) {
-		return gradleFile
-	} else if (gradleKtsFile.exists()) {
-		return gradleKtsFile
-	} else {
-		throw new FileNotFoundException("Could not find build.gradle or build.gradle.kts in $rootDir")
-	}
+	return buildscript.sourceFile
 }
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
