@@ -1,3 +1,9 @@
+## 1.2.0 (2025-09-10)
+
+### Features
+
+-  support for subprojects ([d0373](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/d0373b84d7c2378) msmat0)  [#4](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/issues/4)  
+
 ## 1.1.1 (2025-08-11)
 
 ### Dependency updates
