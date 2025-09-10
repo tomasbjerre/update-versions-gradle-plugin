@@ -52,7 +52,12 @@ def isNonStable(v) {
 }
 
 def getBuildGradleFile() {
-	return buildscript.sourceFile
+	File gradleFile = buildscript.sourceFile
+	if (gradleFile == null) {
+		throw new FileNotFoundException("Could not get gradle build source file.")
+	} else {
+		return gradleFile
+	}
 }
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
