@@ -27,4 +27,4 @@ updateVersions {
 }
 ```
 
-Works great with https://github.com/tomasbjerre/conventional-release-gradle-plugin
+Works great with https://github.com/tomasbjerre/gradle-conventions
