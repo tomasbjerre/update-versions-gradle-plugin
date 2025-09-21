@@ -2,47 +2,28 @@ plugins {
 	id "com.github.ben-manes.versions"
 }
 
-// ---- default config ----
 interface UpdateVersionsPluginExtension {
 	Property<String> getIgnoreDependenciesRegexp()
 }
 
 def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
 extension.ignoreDependenciesRegexp.convention("")
-// ---- default config ----
 
-def getUpdatableDependencies(dependencies,ignoreDependenciesRegexp) {
-	dependencies
-			.collect {
-				[
-					d: it,
-					newVersion: it.available.release ?: (it.available.milestone ?: it.available.integration)
-				]
-			}
-			.findAll {
-				!"${it.d.group}:${it.d.name}:${it.d.version}"
-						.matches(ignoreDependenciesRegexp)
-			}
-			.collect {
-				[
-					prettyPrint: "${it.d.group}:${it.d.name}:${it.d.version} -> ${it.newVersion}",
-					newVersion: it.newVersion,
-					compactFrom: "[\"']${it.d.group}:${it.d.name}:${it.d.version}[\"']",
-					compactTo: "\"${it.d.group}:${it.d.name}:${it.newVersion}\"",
-					verboseFrom: "group:\\s*[\"']${it.d.group}[\"'],\\s*name:\\s*[\"']${it.d.name}[\"'],\\s*version:\\s*[\"']${it.d.version}[\"']"
-				]
-			}
-			.findAll {
-				def buildGradleContent = getBuildGradleFile().text
-				[
-					it.compactFrom,
-					it.verboseFrom
-				].find {
-					java.util.regex.Pattern.compile(it, java.util.regex.Pattern.DOTALL)
-							.matcher(buildGradleContent)
-							.find()
-				}
-			}
+
+def getGradleFiles() {
+	def files = []
+	if (buildscript?.sourceFile) {
+		files << buildscript.sourceFile
+	}
+	return files
+}
+
+def isPluginMarker(dep) {
+	dep.group && dep.name == "${dep.group}.gradle.plugin"
+}
+
+def getPluginId(dep) {
+	return dep.group
 }
 
 def isNonStable(v) {
@@ -51,38 +32,133 @@ def isNonStable(v) {
 	return !stableKeyword && !stableVersion
 }
 
-def getBuildGradleFile() {
-	File gradleFile = buildscript.sourceFile
-	if (gradleFile == null) {
-		throw new FileNotFoundException("Could not get gradle build source file.")
+
+def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
+	dependencies
+			.collect { dep ->
+				[
+					d: dep,
+					newVersion: dep.available.release ?: (dep.available.milestone ?: dep.available.integration)
+				]
+			}
+			.findAll { info ->
+				!"${info.d.group}:${info.d.name}:${info.d.version}".matches(ignoreDependenciesRegexp)
+			}
+			.collect { info ->
+				if (isPluginMarker(info.d)) {
+					def pluginId = getPluginId(info.d)
+					return [
+						prettyPrint   : "plugin ${pluginId}:${info.d.version} -> ${info.newVersion}",
+						fullCoordinate: "${info.d.group}:${info.d.name}:${info.d.version}",
+						newVersion    : info.newVersion,
+						fromPatterns  : [
+							// Groovy DSL
+							"id\\s+['\"]${pluginId}['\"]\\s+version\\s+['\"]${info.d.version}['\"](?:\\s+apply\\s+false)?",
+							// Kotlin DSL
+							"id\\(\\s*['\"]${pluginId}['\"]\\s*\\)\\s+version\\s+['\"]${info.d.version}['\"](?:\\s+apply\\s+false)?",
+						],
+						toGroovy      : "id \"${pluginId}\" version \"${info.newVersion}\"",
+						toKotlin      : "id(\"${pluginId}\") version \"${info.newVersion}\""
+					]
+				} else {
+					return [
+						prettyPrint   : "${info.d.group}:${info.d.name}:${info.d.version} -> ${info.newVersion}",
+						fullCoordinate: "${info.d.group}:${info.d.name}:${info.d.version}",
+						newVersion    : info.newVersion,
+						fromPatterns: [
+							// Flexible pattern for 'group:name:version' in single or double quotes
+							"['\"]\\s*${info.d.group}:${info.d.name}:${info.d.version}\\s*['\"]",
+							// Flexible pattern for map notation: group: '...', name: '...', version: '...'
+							"group:\\s*['\"]${info.d.group}['\"],\\s*name:\\s*['\"]${info.d.name}['\"],\\s*version:\\s*['\"]${info.d.version}['\"]"
+						],
+						toGroovy      : "\"${info.d.group}:${info.d.name}:${info.newVersion}\"",
+						toKotlin      : "\"${info.d.group}:${info.d.name}:${info.newVersion}\""
+					]
+				}
+			}
+			.findAll { info ->
+				getGradleFiles().any { file ->
+					info.fromPatterns.any { pattern ->
+						def found = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL).matcher(file.text).find()
+						logger.info("Checking if file ${file.name} content matches pattern ${pattern} found? ${found}")
+						found
+					}
+				}
+			}
+}
+
+def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
+	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp)
+	if (updatable.isEmpty()) {
+		logger.lifecycle("""\
+
+			All dependencies are up-to-date.
+			""".stripIndent())
+		return
+	}
+
+	if (writeChanges) {
+		def allUpdatedDeps = []
+
+		getGradleFiles().each { file ->
+			def content = file.text
+			def updatedDeps = []
+
+			updatable.each { dep ->
+				dep.fromPatterns.each { from ->
+					def matcher = java.util.regex.Pattern.compile(from, java.util.regex.Pattern.DOTALL).matcher(content)
+					if (matcher.find()) {
+						def replacement = from.contains("id\\(") ? dep.toKotlin : dep.toGroovy
+						content = matcher.replaceAll(replacement)
+
+						updatedDeps << [
+							file       : file.name,
+							coordinate : dep.fullCoordinate,
+							oldVersion : dep.fullCoordinate.split(':')[-1],
+							newVersion : dep.newVersion
+						]
+					}
+				}
+			}
+
+			if (!updatedDeps.isEmpty()) {
+				file.text = content
+				allUpdatedDeps.addAll(updatedDeps)
+			}
+		}
+
+		if (!allUpdatedDeps.isEmpty()) {
+			logger.lifecycle("""\
+				
+				Updated dependencies:
+				
+				""".stripIndent()+allUpdatedDeps.collect { upd -> "  ${upd.coordinate} → ${upd.newVersion}" }.join("\n")
+					+"""
+
+				""".stripIndent())
+		}
 	} else {
-		return gradleFile
+		logger.lifecycle("""\
+
+			There are dependencies that can be updated:
+			
+			""".stripIndent()+updatable.collect { "  - "+it.prettyPrint }.join("\n")+"""
+			
+			Update dependencies with:
+			
+			./gradlew updateDependencies
+
+			""".stripIndent())
 	}
 }
+
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
 	checkForGradleUpdate = false
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		def updatable = getUpdatableDependencies(result.outdated.dependencies,extension.ignoreDependenciesRegexp.get())
-		if (updatable.isEmpty()) {
-			println """\
-
-      All dependencies are up-to-date.
-      """.stripIndent()
-		} else {
-			println "\nThere are dependencies that can be updated:\n"
-			updatable.each { dependency->
-				println "  ${dependency.prettyPrint}"
-			}
-			println """\
-
-      Update dependencies with:
-
-      ./gradlew updateDependencies
-      """.stripIndent()
-		}
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), false)
 	}
 }
 
@@ -91,25 +167,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		def updatable = getUpdatableDependencies(result.outdated.dependencies,extension.ignoreDependenciesRegexp.get())
-		if (!updatable.isEmpty()) {
-			def buildGradleFile = getBuildGradleFile()
-			def buildGradleContent = buildGradleFile.text
-			println "\nStepping dependencies:\n"
-			updatable.each { dependency->
-				println "  ${dependency.prettyPrint}"
-				[
-					dependency.compactFrom,
-					dependency.verboseFrom
-				].each { from ->
-					buildGradleContent = java.util.regex.Pattern.compile(from, java.util.regex.Pattern.DOTALL)
-							.matcher(buildGradleContent)
-							.replaceAll(dependency.compactTo)
-				}
-			}
-			println "\nWriting ${buildGradleFile}"
-			buildGradleFile.text = buildGradleContent
-		}
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), true)
 	}
 }
 

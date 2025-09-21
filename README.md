@@ -19,6 +19,11 @@ It adds these tasks:
 - `./gradlew showUpdateableDependencies` - Print list of dependencies that can be updated.
 - `./gradlew updateDependencies` - Update dependencies that can be updated.
 
+It will:
+
+- Work with both Groovy `.gradle` and Kotlin `.gradle.kts` files.
+- Look for both `dependencies` and `plugins DSL`.
+
 It can be tweaked:
 
 ```groovy
