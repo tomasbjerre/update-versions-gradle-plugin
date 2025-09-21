@@ -53,9 +53,9 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 						newVersion    : info.newVersion,
 						fromPatterns  : [
 							// Groovy DSL
-							"id\\s+['\"]${pluginId}['\"]\\s+version\\s+['\"]${info.d.version}['\"](?:\\s+apply\\s+false)?",
+							"id\\s+['\"]${pluginId}['\"]\\s+version\\s+['\"]${info.d.version}['\"](\\s+apply\\s+false)?",
 							// Kotlin DSL
-							"id\\(\\s*['\"]${pluginId}['\"]\\s*\\)\\s+version\\s+['\"]${info.d.version}['\"](?:\\s+apply\\s+false)?",
+							"id\\(\\s*['\"]${pluginId}['\"]\\s*\\)\\s+version\\s+['\"]${info.d.version}['\"](\\s+apply\\s+false)?"
 						],
 						toGroovy      : "id \"${pluginId}\" version \"${info.newVersion}\"",
 						toKotlin      : "id(\"${pluginId}\") version \"${info.newVersion}\""
@@ -90,10 +90,9 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp)
 	if (updatable.isEmpty()) {
-		logger.lifecycle("""\
-
-			All dependencies are up-to-date.
-			""".stripIndent())
+		logger.lifecycle("""
+            All dependencies are up-to-date.
+        """.stripIndent())
 		return
 	}
 
@@ -103,18 +102,30 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 		getGradleFiles().each { file ->
 			def content = file.text
 			def updatedDeps = []
+			def isKotlin = file.name.endsWith(".kts")
 
 			updatable.each { dep ->
-				dep.fromPatterns.each { from ->
-					def matcher = java.util.regex.Pattern.compile(from, java.util.regex.Pattern.DOTALL).matcher(content)
-					if (matcher.find()) {
-						def replacement = from.contains("id\\(") ? dep.toKotlin : dep.toGroovy
-						content = matcher.replaceAll(replacement)
+				dep.fromPatterns.each { patternStr ->
+					// Ensure regex source is a plain Java String
+					def regexSource = (patternStr instanceof java.util.regex.Pattern ? patternStr.pattern() : patternStr.toString()) as String
+					def matcher = java.util.regex.Pattern.compile(regexSource, java.util.regex.Pattern.DOTALL).matcher(content)
+
+					while (matcher.find()) {
+						def isPluginPattern = regexSource.contains("id\\s+") || regexSource.contains("id\\(")
+						if (isPluginPattern) {
+							// Capture optional "apply false" if present
+							def applyFalse = matcher.groupCount() >= 1 ? (matcher.group(1) ?: "") : ""
+							def replacementBase = isKotlin ? dep.toKotlin.toString() : dep.toGroovy.toString()
+							// Use plain String in the closure
+							content = matcher.replaceFirst { _ -> replacementBase + applyFalse }
+						} else {
+							def replacement = (isKotlin ? dep.toKotlin : dep.toGroovy).toString()
+							content = matcher.replaceFirst(replacement)
+						}
 
 						updatedDeps << [
 							file       : file.name,
-							coordinate : dep.fullCoordinate,
-							oldVersion : dep.fullCoordinate.split(':')[-1],
+							prettyPrint : dep.prettyPrint,
 							newVersion : dep.newVersion
 						]
 					}
@@ -128,30 +139,27 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 		}
 
 		if (!allUpdatedDeps.isEmpty()) {
-			logger.lifecycle("""\
-				
-				Updated dependencies:
-				
-				""".stripIndent()+allUpdatedDeps.collect { upd -> "  ${upd.coordinate} → ${upd.newVersion}" }.join("\n")
-					+"""
+			logger.lifecycle("""
+			Updated dependencies:
 
-				""".stripIndent())
+            """.stripIndent() + allUpdatedDeps.collect { upd -> "  ${upd.prettyPrint}" }.join("\n") + "\n")
 		}
 	} else {
-		logger.lifecycle("""\
+		logger.lifecycle("""
+		There are dependencies that can be updated:
+        """.stripIndent())
 
-			There are dependencies that can be updated:
-			
-			""".stripIndent()+updatable.collect { "  - "+it.prettyPrint }.join("\n")+"""
-			
-			Update dependencies with:
-			
-			./gradlew updateDependencies
+		logger.lifecycle(updatable.collect { "  - " + it.prettyPrint }.join("\n"))
 
-			""".stripIndent())
+		logger.lifecycle("""
+        
+        Update dependencies with:
+        
+          ./gradlew updateDependencies
+        
+        """.stripIndent())
 	}
 }
-
 
 task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask) {
 	checkForGradleUpdate = false

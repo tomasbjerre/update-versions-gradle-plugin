@@ -1,6 +1,7 @@
 plugins {
 	id("java-library")
 	id("se.bjurr.gradle.update-versions") version "latest-SNAPSHOT"
+	id("se.bjurr.gitchangelog.git-changelog-gradle-plugin") version "3.0.0" apply false
 }
 
 dependencies {
