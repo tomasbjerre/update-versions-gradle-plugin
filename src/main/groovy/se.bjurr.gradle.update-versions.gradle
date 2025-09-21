@@ -142,14 +142,14 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 			logger.lifecycle("""
 			Updated dependencies:
 
-            """.stripIndent() + allUpdatedDeps.collect { upd -> "  ${upd.prettyPrint}" }.join("\n") + "\n")
+            """.stripIndent() + allUpdatedDeps.collect { upd -> "  ✅ ${upd.prettyPrint}" }.join("\n") + "\n")
 		}
 	} else {
 		logger.lifecycle("""
 		There are dependencies that can be updated:
         """.stripIndent())
 
-		logger.lifecycle(updatable.collect { "  - " + it.prettyPrint }.join("\n"))
+		logger.lifecycle(updatable.collect { "  🔍 " + it.prettyPrint }.join("\n"))
 
 		logger.lifecycle("""
         
