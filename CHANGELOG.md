@@ -1,3 +1,9 @@
+## 1.3.0 (2025-09-21)
+
+### Features
+
+-  support plugins ([f1f11](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/f1f110908bfe867) Tomas Bjerre)  
+
 ## 1.2.0 (2025-09-10)
 
 ### Features
