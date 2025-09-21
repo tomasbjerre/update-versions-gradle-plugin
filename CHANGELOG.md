@@ -1,3 +1,13 @@
+## 1.4.0 (2025-09-21)
+
+### Features
+
+-  emojis ([21097](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/21097129e26ac81) Tomas Bjerre)  
+
+### Bug Fixes
+
+-  preserve apply false if any ([2449e](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/2449ea4bd6e359d) Tomas Bjerre)  
+
 ## 1.3.0 (2025-09-21)
 
 ### Features
