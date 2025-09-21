@@ -5,3 +5,7 @@ pluginManagement {
 		mavenLocal()
 	}
 }
+
+plugins {
+	id "se.bjurr.gradle.bundle-jar" version "1.+" apply false
+}
