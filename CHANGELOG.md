@@ -1,3 +1,13 @@
+## 1.5.0 (2025-09-22)
+
+### Features
+
+-  avoid showUpdateableDependencies on build in CI ([cb768](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/cb768ea0e379b58) Tomas Bjerre)  
+
+### Bug Fixes
+
+-  universally supported emojis ([af7ca](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/af7caf8a53f7c2a) Tomas Bjerre)  
+
 ## 1.4.1 (2025-09-21)
 
 ### Bug Fixes
