@@ -32,7 +32,6 @@ def isNonStable(v) {
 	return !stableKeyword && !stableVersion
 }
 
-
 def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 	dependencies
 			.collect { dep ->
@@ -179,4 +178,22 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	}
 }
 
-tasks.named("build") { finalizedBy("showUpdateableDependencies") }
+boolean runningInCI() {
+	def env = System.getenv()
+	return (
+			env['CI']?.toBoolean() ||
+			env['GITHUB_ACTIONS']?.toBoolean() ||
+			env['GITLAB_CI']?.toBoolean() ||
+			env['TRAVIS']?.toBoolean() ||
+			env['CIRCLECI']?.toBoolean() ||
+			env['JENKINS_URL'] != null ||
+			env['TF_BUILD']?.toBoolean() || // Azure Pipelines
+			env['BUILDKITE']?.toBoolean()
+			)
+}
+
+if (runningInCI()) {
+	logger.lifecycle("Running in CI, saving time by not showing updatable dependencies after build.")
+}else {
+	tasks.named("build") { finalizedBy("showUpdateableDependencies") }
+}
