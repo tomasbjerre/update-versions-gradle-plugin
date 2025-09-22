@@ -1,3 +1,9 @@
+## 1.5.1 (2025-09-22)
+
+### Bug Fixes
+
+-  emojis ([41932](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/419322d4c98d8c8) Tomas Bjerre)  
+
 ## 1.5.0 (2025-09-22)
 
 ### Features
