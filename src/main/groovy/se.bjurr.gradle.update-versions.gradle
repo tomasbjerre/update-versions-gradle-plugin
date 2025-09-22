@@ -91,7 +91,7 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp)
 	if (updatable.isEmpty()) {
 		logger.lifecycle("""
-            🥳 All dependencies are up-to-date.
+        ☀️ All dependencies are up-to-date.
         """.stripIndent())
 		return
 	}
@@ -140,20 +140,20 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 
 		if (!allUpdatedDeps.isEmpty()) {
 			logger.lifecycle("""
-			😇 Updated dependencies:
+			📝 Updated dependencies:
 
-            """.stripIndent() + allUpdatedDeps.collect { upd -> "  ✅ ${upd.prettyPrint}" }.join("\n") + "\n")
+            """.stripIndent() + allUpdatedDeps.collect { upd -> "  📦 ${upd.prettyPrint}" }.join("\n") + "\n")
 		}
 	} else {
 		logger.lifecycle("""
-		😯 There are dependencies that can be updated:
+		📝 There are dependencies that can be updated:
         """.stripIndent())
 
-		logger.lifecycle(updatable.collect { "  🔍 " + it.prettyPrint }.join("\n"))
+		logger.lifecycle(updatable.collect { "  📦 " + it.prettyPrint }.join("\n"))
 
 		logger.lifecycle("""
         
-        😓 Update dependencies with:
+        😅 Update dependencies with:
         
           ./gradlew updateDependencies
         
