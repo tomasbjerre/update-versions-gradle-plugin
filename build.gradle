@@ -10,16 +10,9 @@ plugins {
  * Dependencies needed by the plugin in src/main/groovy
  */
 dependencies {
-	implementation "com.github.ben-manes:gradle-versions-plugin:0.52.0"
+	implementation "com.github.ben-manes:gradle-versions-plugin:0.53.0"
 }
 
-repositories {
-	gradlePluginPortal()
-	mavenCentral()
-	mavenLocal()
-}
-
-java {
-	sourceCompatibility = JavaVersion.VERSION_11
-	targetCompatibility = JavaVersion.VERSION_11
+javaExtension {
+	javaVersion = 11
 }
