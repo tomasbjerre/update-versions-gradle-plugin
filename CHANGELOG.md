@@ -1,3 +1,8 @@
+## 1.5.2 (2025-09-28)
+
+### Dependency updates
+
+- dependencies ([bb7b7](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/bb7b71616c16228) Tomas Bjerre)  
 ## 1.5.1 (2025-09-22)
 
 ### Bug Fixes
