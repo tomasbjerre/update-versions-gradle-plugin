@@ -11,6 +11,10 @@ dependencies {
 	implementation 'se.bjurr.violations:violations-lib:1.0.0'
 	implementation group: 'se.bjurr.violations', name: 'violations-git-lib', version: '2.0.0'
 	implementation "se.bjurr.gitchangelog:git-changelog-lib:1.0.0"
+
+	// This tests that there are 2 lines that are matched
+	compileOnly "org.immutables:value:2.11.2"
+	annotationProcessor "org.immutables:value:2.11.2"
 }
 
 repositories {

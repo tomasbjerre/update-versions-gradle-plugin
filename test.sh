@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./gradlew publishToMavenLocal -Pversion=latest-SNAPSHOT
+./gradlew publishToMavenLocal -x spotlessGroovyGradle -Pversion=latest-SNAPSHOT
 
 cd test-groovy \
  && ./gradlew sUD -s \

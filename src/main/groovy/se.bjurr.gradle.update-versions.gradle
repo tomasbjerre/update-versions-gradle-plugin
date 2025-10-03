@@ -104,12 +104,22 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 			def isKotlin = file.name.endsWith(".kts")
 
 			updatable.each { dep ->
+			logger.info("Checking ${file.name} for updates to ${dep.prettyPrint}")
 				dep.fromPatterns.each { patternStr ->
+				logger.info("  Using pattern: ${patternStr}")
 					// Ensure regex source is a plain Java String
 					def regexSource = (patternStr instanceof java.util.regex.Pattern ? patternStr.pattern() : patternStr.toString()) as String
 					def matcher = java.util.regex.Pattern.compile(regexSource, java.util.regex.Pattern.DOTALL).matcher(content)
 
+					def countFinds = 0;
+					def maxFinds = 10;
 					while (matcher.find()) {
+						countFinds++;
+						if (countFinds > maxFinds) {
+							logger.info("Found more than ${maxFinds} matches for pattern ${regexSource} in file ${file.name}, stopping to avoid infinite loop.")
+							break;
+						}
+						logger.info("    Found match for pattern: ${regexSource}")
 						def isPluginPattern = regexSource.contains("id\\s+") || regexSource.contains("id\\(")
 						if (isPluginPattern) {
 							// Capture optional "apply false" if present
@@ -141,14 +151,14 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 			logger.lifecycle("""
 			📝 Updated dependencies:
 
-            """.stripIndent() + allUpdatedDeps.collect { upd -> "  📦 ${upd.prettyPrint}" }.join("\n") + "\n")
+            """.stripIndent() + allUpdatedDeps.collect { upd -> "  📦 ${upd.prettyPrint}" }.unique().sort().join("\n") + "\n")
 		}
 	} else {
 		logger.lifecycle("""
 		📝 There are dependencies that can be updated:
         """.stripIndent())
 
-		logger.lifecycle(updatable.collect { "  📦 " + it.prettyPrint }.join("\n"))
+		logger.lifecycle(updatable.collect { "  📦 " + it.prettyPrint }.unique().sort().join("\n"))
 
 		logger.lifecycle("""
         
