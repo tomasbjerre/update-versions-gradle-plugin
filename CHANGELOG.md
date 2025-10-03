@@ -1,3 +1,9 @@
+## 1.5.3 (2025-10-03)
+
+### Bug Fixes
+
+-  avoid infinite loop ([00b49](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/00b496e6575546f) Tomas Bjerre)  
+
 ## 1.5.2 (2025-09-28)
 
 ### Dependency updates

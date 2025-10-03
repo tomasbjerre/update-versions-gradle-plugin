@@ -104,9 +104,9 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 			def isKotlin = file.name.endsWith(".kts")
 
 			updatable.each { dep ->
-			logger.info("Checking ${file.name} for updates to ${dep.prettyPrint}")
+				logger.info("Checking ${file.name} for updates to ${dep.prettyPrint}")
 				dep.fromPatterns.each { patternStr ->
-				logger.info("  Using pattern: ${patternStr}")
+					logger.info("  Using pattern: ${patternStr}")
 					// Ensure regex source is a plain Java String
 					def regexSource = (patternStr instanceof java.util.regex.Pattern ? patternStr.pattern() : patternStr.toString()) as String
 					def matcher = java.util.regex.Pattern.compile(regexSource, java.util.regex.Pattern.DOTALL).matcher(content)
