@@ -107,36 +107,41 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 				logger.info("Checking ${file.name} for updates to ${dep.prettyPrint}")
 				dep.fromPatterns.each { patternStr ->
 					logger.info("  Using pattern: ${patternStr}")
-					// Ensure regex source is a plain Java String
-					def regexSource = (patternStr instanceof java.util.regex.Pattern ? patternStr.pattern() : patternStr.toString()) as String
-					def matcher = java.util.regex.Pattern.compile(regexSource, java.util.regex.Pattern.DOTALL).matcher(content)
+					def pattern = java.util.regex.Pattern.compile(patternStr, java.util.regex.Pattern.DOTALL)
 
-					def countFinds = 0;
-					def maxFinds = 10;
-					while (matcher.find()) {
-						countFinds++;
-						if (countFinds > maxFinds) {
-							logger.info("Found more than ${maxFinds} matches for pattern ${regexSource} in file ${file.name}, stopping to avoid infinite loop.")
-							break;
-						}
-						logger.info("    Found match for pattern: ${regexSource}")
-						def isPluginPattern = regexSource.contains("id\\s+") || regexSource.contains("id\\(")
-						if (isPluginPattern) {
-							// Capture optional "apply false" if present
+					def matcher = pattern.matcher(content)
+					def isPluginPattern = patternStr.contains("id\\s+") || patternStr.contains("id\\(")
+					
+					if (isPluginPattern) {
+						// Plugin patterns need special handling for "apply false"
+						while (matcher.find()) {
+							logger.info("    Found match for pattern: ${patternStr}")
 							def applyFalse = matcher.groupCount() >= 1 ? (matcher.group(1) ?: "") : ""
 							def replacementBase = isKotlin ? dep.toKotlin.toString() : dep.toGroovy.toString()
-							// Use plain String in the closure
 							content = matcher.replaceFirst { _ -> replacementBase + applyFalse }
-						} else {
-							def replacement = (isKotlin ? dep.toKotlin : dep.toGroovy).toString()
-							content = matcher.replaceFirst(replacement)
+							
+							updatedDeps << [
+								file       : file.name,
+								prettyPrint : dep.prettyPrint,
+								newVersion : dep.newVersion
+							]
+							
+							// Create new matcher with updated content
+							matcher = pattern.matcher(content)
 						}
-
-						updatedDeps << [
-							file       : file.name,
-							prettyPrint : dep.prettyPrint,
-							newVersion : dep.newVersion
-						]
+					} else {
+						// For dependencies, we can use replaceAll since there are no capture groups
+						if (matcher.find()) {
+							logger.info("    Found match for pattern: ${patternStr}")
+							def replacement = (isKotlin ? dep.toKotlin : dep.toGroovy).toString()
+							content = pattern.matcher(content).replaceAll(replacement)
+							
+							updatedDeps << [
+								file       : file.name,
+								prettyPrint : dep.prettyPrint,
+								newVersion : dep.newVersion
+							]
+						}
 					}
 				}
 			}
