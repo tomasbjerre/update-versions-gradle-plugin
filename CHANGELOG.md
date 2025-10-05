@@ -1,3 +1,9 @@
+## 1.5.4 (2025-10-05)
+
+### Bug Fixes
+
+-  prettier fix for infinite loop bug ([3a67f](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/3a67fb52468238e) Tomas Bjerre)  
+
 ## 1.5.3 (2025-10-03)
 
 ### Bug Fixes

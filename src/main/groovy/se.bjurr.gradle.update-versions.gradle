@@ -111,7 +111,7 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 
 					def matcher = pattern.matcher(content)
 					def isPluginPattern = patternStr.contains("id\\s+") || patternStr.contains("id\\(")
-					
+
 					if (isPluginPattern) {
 						// Plugin patterns need special handling for "apply false"
 						while (matcher.find()) {
@@ -119,13 +119,13 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 							def applyFalse = matcher.groupCount() >= 1 ? (matcher.group(1) ?: "") : ""
 							def replacementBase = isKotlin ? dep.toKotlin.toString() : dep.toGroovy.toString()
 							content = matcher.replaceFirst { _ -> replacementBase + applyFalse }
-							
+
 							updatedDeps << [
 								file       : file.name,
 								prettyPrint : dep.prettyPrint,
 								newVersion : dep.newVersion
 							]
-							
+
 							// Create new matcher with updated content
 							matcher = pattern.matcher(content)
 						}
@@ -135,7 +135,7 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 							logger.info("    Found match for pattern: ${patternStr}")
 							def replacement = (isKotlin ? dep.toKotlin : dep.toGroovy).toString()
 							content = pattern.matcher(content).replaceAll(replacement)
-							
+
 							updatedDeps << [
 								file       : file.name,
 								prettyPrint : dep.prettyPrint,
