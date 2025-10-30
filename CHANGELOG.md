@@ -1,3 +1,12 @@
+## 1.5.5 (2025-10-30)
+
+### Bug Fixes
+
+-  build.gradle/kt may not exist in multiprojects subprojects ([b4967](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/b49671d2062caa2) Tomas Bjerre)  
+
+### Dependency updates
+
+- gradle 9 ([e1428](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/e1428f06c715ae5) Tomas Bjerre)  
 ## 1.5.4 (2025-10-05)
 
 ### Bug Fixes
