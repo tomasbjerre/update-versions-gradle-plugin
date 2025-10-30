@@ -12,8 +12,9 @@ extension.ignoreDependenciesRegexp.convention("")
 
 def getGradleFiles() {
 	def files = []
-	if (buildscript?.sourceFile) {
-		files << buildscript.sourceFile
+	def srcFile = buildscript?.sourceFile
+	if (srcFile?.exists()) {
+		files << srcFile
 	}
 	return files
 }
