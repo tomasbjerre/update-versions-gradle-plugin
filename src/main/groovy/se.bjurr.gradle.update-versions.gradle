@@ -34,6 +34,11 @@ def isNonStable(v) {
 }
 
 def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
+	def gradleFiles = getGradleFiles()
+	def fileContents = gradleFiles.collectEntries { file ->
+		[(file): file.text]
+	}
+
 	dependencies
 			.collect { dep ->
 				[
@@ -77,9 +82,9 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 				}
 			}
 			.findAll { info ->
-				getGradleFiles().any { file ->
+				fileContents.any { file, content ->
 					info.fromPatterns.any { pattern ->
-						def found = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL).matcher(file.text).find()
+						def found = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL).matcher(content).find()
 						logger.info("Checking if file ${file.name} content matches pattern ${pattern} found? ${found}")
 						found
 					}
@@ -115,7 +120,9 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 
 					if (isPluginPattern) {
 						// Plugin patterns need special handling for "apply false"
-						while (matcher.find()) {
+						def matchCount = 0
+						def maxMatches = 100 // Safety limit to prevent infinite loops
+						while (matcher.find() && matchCount < maxMatches) {
 							logger.info("    Found match for pattern: ${patternStr}")
 							def applyFalse = matcher.groupCount() >= 1 ? (matcher.group(1) ?: "") : ""
 							def replacementBase = isKotlin ? dep.toKotlin.toString() : dep.toGroovy.toString()
@@ -129,6 +136,11 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 
 							// Create new matcher with updated content
 							matcher = pattern.matcher(content)
+							matchCount++
+						}
+
+						if (matchCount >= maxMatches) {
+							logger.warn("    Reached maximum match limit (${maxMatches}), stopping to prevent infinite loop")
 						}
 					} else {
 						// For dependencies, we can use replaceAll since there are no capture groups
