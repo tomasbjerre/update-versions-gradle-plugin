@@ -1,3 +1,9 @@
+## 1.5.6 (2025-11-08)
+
+### Bug Fixes
+
+-  memory leak ([fefdf](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/fefdffdc5bfc6fa) Tomas Bjerre)  
+
 ## 1.5.5 (2025-10-30)
 
 ### Bug Fixes
