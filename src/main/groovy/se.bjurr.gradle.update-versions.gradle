@@ -72,7 +72,6 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
             .collect { dep ->
                 [
                     d: dep,
-					newVersion: dep.available.release ?: (dep.available.milestone ?: dep.available.integration)
                     newVersion: getResolvableVersion(dep)
                 ]
             }
