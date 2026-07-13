@@ -10,6 +10,12 @@
 
 -  avoid updating dependencies that cannot be fetched ([79eba](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/79eba72e75e3c47) Tomas Bjerre)  
 
+## 1.5.8 (2026-07-13)
+
+### Bug Fixes
+
+-  avoid updating dependencies that cannot be fetched ([79eba](https://github.com/tomasbjerre/updateable-versions-gradle-plugin/commit/79eba72e75e3c47) Tomas Bjerre)  
+
 ## 1.5.7 (2025-11-08)
 
 ### Bug Fixes
