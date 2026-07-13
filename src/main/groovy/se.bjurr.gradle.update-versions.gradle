@@ -33,6 +33,35 @@ def isNonStable(v) {
 	return !stableKeyword && !stableVersion
 }
 
+def canResolveDependency(String group, String name, String version) {
+    try {
+        def conf = project.configurations.detachedConfiguration(
+                project.dependencies.create("${group}:${name}:${version}")
+        )
+
+        // Don't pollute dependency caches
+        conf.transitive = false
+
+        conf.resolve()
+        return true
+    } catch (Exception e) {
+        logger.info("Cannot resolve ${group}:${name}:${version}: ${e.message}")
+        return false
+    }
+}
+
+def getResolvableVersion(dep) {
+    [
+            dep.available.release,
+            dep.available.milestone,
+            dep.available.integration
+    ]
+            .findAll { it != null }
+            .find { version ->
+                canResolveDependency(dep.group, dep.name, version)
+            }
+}
+
 def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 	def gradleFiles = getGradleFiles()
 	def fileContents = gradleFiles.collectEntries { file ->
@@ -40,12 +69,14 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 	}
 
 	dependencies
-			.collect { dep ->
-				[
-					d: dep,
+            .collect { dep ->
+                [
+                    d: dep,
 					newVersion: dep.available.release ?: (dep.available.milestone ?: dep.available.integration)
-				]
-			}
+                    newVersion: getResolvableVersion(dep)
+                ]
+            }
+            .findAll { it.newVersion != null }
 			.findAll { info ->
 				!"${info.d.group}:${info.d.name}:${info.d.version}".matches(ignoreDependenciesRegexp)
 			}
