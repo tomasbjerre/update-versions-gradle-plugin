@@ -1,3 +1,9 @@
+## 1.5.12 (2026-07-13)
+
+### Bug Fixes
+
+-  bump ([86565](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/86565bc288b86ff) Tomas Bjerre)  
+
 ## 1.5.9 (2026-07-13)
 
 ### Bug Fixes
