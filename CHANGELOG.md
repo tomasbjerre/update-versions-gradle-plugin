@@ -1,3 +1,9 @@
+## 1.6.0 (2026-07-14)
+
+### Features
+
+-  specify number of threads to use when checking if dependency is available ([25c70](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/25c702bd9be55c3) Tomas Bjerre)  
+
 ## 1.5.13 (2026-07-14)
 
 ### Bug Fixes
