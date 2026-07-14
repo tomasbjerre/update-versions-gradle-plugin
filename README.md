@@ -29,6 +29,7 @@ It can be tweaked:
 ```groovy
 updateVersions {
   ignoreDependenciesRegexp.set("anything matching this regexp will be ignored")
+  resolveChecksInParallelThreads.set("2") // Is 2 by default
 }
 ```
 

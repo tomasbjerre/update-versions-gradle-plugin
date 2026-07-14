@@ -4,6 +4,12 @@
 
 -  avoid update to quarantined dependencies ([533f6](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/533f6131dd9d870) Tomas Bjerre)  
 
+## 1.5.13 (2026-07-14)
+
+### Bug Fixes
+
+-  avoid update to quarantined dependencies ([533f6](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/533f6131dd9d870) Tomas Bjerre)  
+
 ## 1.5.12 (2026-07-13)
 
 ### Bug Fixes
