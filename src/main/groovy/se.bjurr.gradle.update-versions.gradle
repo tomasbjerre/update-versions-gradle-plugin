@@ -36,14 +36,35 @@ def isNonStable(v) {
 def canResolveDependency(String group, String name, String version) {
 	try {
 		def conf = project.configurations.detachedConfiguration(
-				project.dependencies.create("${group}:${name}:${version}")
-				)
+				project.dependencies.create("${group}:${name}:${version}"))
 
 		// Don't pollute dependency caches
 		conf.transitive = false
 
-		conf.resolve()
-		return true
+		// Force a fresh check against the repository instead of trusting
+		// previously cached resolution results (important for Nexus Firewall,
+		// where quarantine decisions can change between requests)
+		conf.resolutionStrategy {
+			cacheChangingModulesFor(0, 'seconds')
+			cacheDynamicVersionsFor(0, 'seconds')
+		}
+
+		// Use LenientConfiguration so we get a clean pass/fail signal that
+		// covers artifact download failures, not just graph/metadata resolution
+		def lenient = conf.resolvedConfiguration.lenientConfiguration
+
+		// This is the important part: getFiles() actually forces download of
+		// the jar artifacts (not just POM/metadata), which is what fails when
+		// Nexus Firewall blocks the binary
+		def files = lenient.getFiles { true }
+
+		def unresolved = lenient.getUnresolvedModuleDependencies()
+		if (!unresolved.isEmpty()) {
+			logger.info("Cannot resolve artifact for ${group}:${name}:${version}: ${unresolved*.problem}")
+			return false
+		}
+
+		return !files.isEmpty()
 	} catch (Exception e) {
 		logger.info("Cannot resolve ${group}:${name}:${version}: ${e.message}")
 		return false
