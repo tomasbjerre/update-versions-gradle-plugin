@@ -1,18 +1,13 @@
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-
 plugins {
 	id "com.github.ben-manes.versions"
 }
 
 interface UpdateVersionsPluginExtension {
 	Property<String> getIgnoreDependenciesRegexp()
-	Property<Integer> getResolveChecksInParallelThreads()
 }
 
 def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
 extension.ignoreDependenciesRegexp.convention("")
-extension.resolveChecksInParallelThreads.convention(2)
 
 
 def getGradleFiles() {
@@ -41,34 +36,14 @@ def isNonStable(v) {
 def canResolveDependency(String group, String name, String version) {
 	try {
 		def conf = project.configurations.detachedConfiguration(
-				project.dependencies.create("${group}:${name}:${version}"))
+				project.dependencies.create("${group}:${name}:${version}")
+				)
 
 		// Don't pollute dependency caches
 		conf.transitive = false
 
-		// Force a fresh check against the repository instead of trusting
-		// previously cached resolution results (important for Nexus Firewall,
-		// where quarantine decisions can change between requests)
-		conf.resolutionStrategy {
-			cacheChangingModulesFor(0, 'seconds')
-			cacheDynamicVersionsFor(0, 'seconds')
-		}
-
-		// Use LenientConfiguration so we get a clean pass/fail signal that
-		// covers artifact download failures, not just graph/metadata resolution
-		def lenient = conf.resolvedConfiguration.lenientConfiguration
-
-		// This forces actual download of the jar artifacts (not just POM/metadata),
-		// which is what fails when Nexus Firewall blocks the binary
-		def files = lenient.getFiles { true }
-
-		def unresolved = lenient.getUnresolvedModuleDependencies()
-		if (!unresolved.isEmpty()) {
-			logger.info("Cannot resolve artifact for ${group}:${name}:${version}: ${unresolved*.problem}")
-			return false
-		}
-
-		return !files.isEmpty()
+		conf.resolve()
+		return true
 	} catch (Exception e) {
 		logger.info("Cannot resolve ${group}:${name}:${version}: ${e.message}")
 		return false
@@ -87,43 +62,19 @@ def getResolvableVersion(dep) {
 	}
 }
 
-def resolveDependenciesInParallel(dependencies, int resolveChecksInParallelThreads) {
-	if (resolveChecksInParallelThreads <= 1) {
-		// No point spinning up an executor for sequential work
-		return dependencies.collect { dep ->
-			[
-				d: dep,
-				newVersion: getResolvableVersion(dep)
-			]
-		}
-	}
-
-	def executor = Executors.newFixedThreadPool(resolveChecksInParallelThreads)
-	try {
-		def futures = dependencies.collect { dep ->
-			executor.submit({
-				[
-					d: dep,
-					newVersion: getResolvableVersion(dep)
-				]
-			} as java.util.concurrent.Callable)
-		}
-
-		// Block until all are done, preserving original order
-		return futures.collect { it.get() }
-	} finally {
-		executor.shutdown()
-		executor.awaitTermination(5, TimeUnit.MINUTES)
-	}
-}
-
-def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp, int resolveChecksInParallelThreads) {
+def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 	def gradleFiles = getGradleFiles()
 	def fileContents = gradleFiles.collectEntries { file ->
 		[(file): file.text]
 	}
 
-	resolveDependenciesInParallel(dependencies, resolveChecksInParallelThreads)
+	dependencies
+			.collect { dep ->
+				[
+					d: dep,
+					newVersion: getResolvableVersion(dep)
+				]
+			}
 			.findAll { it.newVersion != null }
 			.findAll { info ->
 				!"${info.d.group}:${info.d.name}:${info.d.version}".matches(ignoreDependenciesRegexp)
@@ -171,8 +122,8 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp, int resolve
 			}
 }
 
-def handleDependencies(result, ignoreDependenciesRegexp, int resolveChecksInParallelThreads, boolean writeChanges) {
-	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp, resolveChecksInParallelThreads)
+def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
+	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp)
 	if (updatable.isEmpty()) {
 		logger.lifecycle("""
         ☀️  All dependencies are up-to-date.
@@ -278,7 +229,7 @@ task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.update
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.resolveChecksInParallelThreads.get(), false)
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), false)
 	}
 }
 
@@ -287,7 +238,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.resolveChecksInParallelThreads.get(), true)
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), true)
 	}
 }
 
