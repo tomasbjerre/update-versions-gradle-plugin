@@ -1,3 +1,9 @@
+## 1.6.1 (2026-07-14)
+
+### Bug Fixes
+
+-  reverting extra check, did not work ([41a42](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/41a428409849cf8) Tomas Bjerre)  
+
 ## 1.6.0 (2026-07-14)
 
 ### Features
