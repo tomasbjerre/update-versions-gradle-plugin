@@ -1,3 +1,17 @@
+## 1.7.0 (2026-07-18)
+
+### Features
+
+-  downgradeUnresolvedDependencies ([b755c](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/b755c3a7a1f56d0) Tomas Bjerre)  
+
+### Other changes
+
+**feat setMissingVersions**
+
+
+[54086](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/54086b8ca5ffa25) Tomas Bjerre *2026-07-18 16:17:01*
+
+
 ## 1.6.1 (2026-07-14)
 
 ### Bug Fixes
