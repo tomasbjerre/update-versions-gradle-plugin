@@ -5,11 +5,13 @@ plugins {
 interface UpdateVersionsPluginExtension {
 	Property<String> getIgnoreDependenciesRegexp()
 	Property<Boolean> getDowngradeUnresolvedDependencies()
+	Property<Boolean> getSetMissingVersions()
 }
 
 def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
 extension.ignoreDependenciesRegexp.convention("")
 extension.downgradeUnresolvedDependencies.convention(true)
+extension.setMissingVersions.convention(true)
 
 
 def getGradleFiles() {
@@ -64,10 +66,10 @@ def getResolvableVersion(dep) {
 	}
 }
 
-def resolveHighestVersionBelow(String group, String name, String version) {
+def resolveVersionMatching(String group, String name, String versionConstraint) {
 	try {
 		def conf = project.configurations.detachedConfiguration(
-				project.dependencies.create("${group}:${name}:(,${version})")
+				project.dependencies.create("${group}:${name}:${versionConstraint}")
 				)
 
 		// Don't pollute dependency caches
@@ -92,13 +94,27 @@ def resolveHighestVersionBelow(String group, String name, String version) {
 		def candidate = resolved.first().module.id.version
 		return canResolveDependency(group, name, candidate) ? candidate : null
 	} catch (Exception e) {
-		logger.info("Cannot resolve a version below ${group}:${name}:${version}: ${e.message}")
+		logger.info("Cannot resolve ${group}:${name}:${versionConstraint}: ${e.message}")
 		return null
 	}
 }
 
+def resolveHighestVersionBelow(String group, String name, String version) {
+	resolveVersionMatching(group, name, "(,${version})")
+}
+
+def resolveLatestVersion(String group, String name) {
+	resolveVersionMatching(group, name, "+")
+}
+
 def emojiFor(String kind) {
-	kind == "downgrade" ? "⬇️" : "📦"
+	if (kind == "downgrade") {
+		return "⬇️"
+	}
+	if (kind == "missing") {
+		return "➕"
+	}
+	return "📦"
 }
 
 def buildRewritePlan(dep, newVersion, String kind) {
@@ -134,6 +150,26 @@ def buildRewritePlan(dep, newVersion, String kind) {
 			toKotlin      : "\"${dep.group}:${dep.name}:${newVersion}\""
 		]
 	}
+}
+
+def buildMissingVersionRewritePlan(dep, newVersion) {
+	return [
+		kind          : "missing",
+		prettyPrint   : "${dep.group}:${dep.name} -> ${newVersion}",
+		fullCoordinate: "${dep.group}:${dep.name}:",
+		newVersion    : newVersion,
+		fromPatterns: [
+			// String notation with no version at all: 'group:name'
+			"['\"]\\s*${dep.group}:${dep.name}\\s*['\"]",
+			// String notation with an empty trailing version: 'group:name:'
+			"['\"]\\s*${dep.group}:${dep.name}:\\s*['\"]",
+			// Map notation without a version key at all (group/name must be the fixed order
+			// used elsewhere in this plugin, and must not be followed by a version key)
+			"group:\\s*['\"]${dep.group}['\"],\\s*name:\\s*['\"]${dep.name}['\"](?!\\s*,\\s*version)"
+		],
+		toGroovy      : "\"${dep.group}:${dep.name}:${newVersion}\"",
+		toKotlin      : "\"${dep.group}:${dep.name}:${newVersion}\""
+	]
 }
 
 def filterToRewritablePlans(plans) {
@@ -210,12 +246,40 @@ def getDowngradableDependencies(exceededDependencies, unresolvedDependencies, ig
 	return filterToRewritablePlans(plans)
 }
 
-def handleDependencies(result, ignoreDependenciesRegexp, boolean downgradeUnresolvedDependencies, boolean writeChanges) {
+def getMissingVersionDependencies(undeclaredDependencies, ignoreDependenciesRegexp, boolean setMissingVersions, boolean downgradeUnresolvedDependencies) {
+	// A dependency with no version at all gives gradle-versions-plugin nothing to compare
+	// against, so it carries no candidate-version data whatsoever (same situation as
+	// "unresolved"). The only way to find one is our own resolution, which is exactly the
+	// mechanism downgradeUnresolvedDependencies already provides - so filling in a missing
+	// version is gated behind that same flag, not just setMissingVersions on its own.
+	if (!setMissingVersions || !downgradeUnresolvedDependencies) {
+		return []
+	}
+
+	def plans = undeclaredDependencies
+			.findAll { it.group && it.name }
+			.collect { dep ->
+				[
+					d: dep,
+					newVersion: resolveLatestVersion(dep.group, dep.name)
+				]
+			}
+			.findAll { it.newVersion != null }
+			.findAll { info ->
+				!"${info.d.group}:${info.d.name}:".matches(ignoreDependenciesRegexp)
+			}
+			.collect { info -> buildMissingVersionRewritePlan(info.d, info.newVersion) }
+
+	return filterToRewritablePlans(plans)
+}
+
+def handleDependencies(result, ignoreDependenciesRegexp, boolean downgradeUnresolvedDependencies, boolean setMissingVersions, boolean writeChanges) {
 	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp)
 	def downgradable = downgradeUnresolvedDependencies
 			? getDowngradableDependencies(result.exceeded.dependencies, result.unresolved.dependencies, ignoreDependenciesRegexp)
 			: []
-	def changes = updatable + downgradable
+	def missing = getMissingVersionDependencies(result.undeclared.dependencies, ignoreDependenciesRegexp, setMissingVersions, downgradeUnresolvedDependencies)
+	def changes = updatable + downgradable + missing
 	if (changes.isEmpty()) {
 		logger.lifecycle("""
         ☀️  All dependencies are up-to-date.
@@ -323,7 +387,7 @@ task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.update
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.downgradeUnresolvedDependencies.get(), false)
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.downgradeUnresolvedDependencies.get(), extension.setMissingVersions.get(), false)
 	}
 }
 
@@ -332,7 +396,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.downgradeUnresolvedDependencies.get(), true)
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.downgradeUnresolvedDependencies.get(), extension.setMissingVersions.get(), true)
 	}
 }
 
