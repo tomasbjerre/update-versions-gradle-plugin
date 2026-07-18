@@ -11,8 +11,23 @@ plugins {
  */
 dependencies {
 	implementation "com.github.ben-manes:gradle-versions-plugin:0.54.0"
+
+	testImplementation gradleTestKit()
+	testImplementation platform("org.junit:junit-bom:5.11.4")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+	testImplementation "org.assertj:assertj-core:3.27.3"
 }
 
 javaExtension {
 	javaVersion = 11
+}
+
+test {
+	useJUnitPlatform()
+	// Gradle TestKit spawns nested Gradle builds in these tests, and Gradle 9 requires
+	// JVM 17+ to run at all - independent of the JVM 11 toolchain this project compiles for.
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
 }
