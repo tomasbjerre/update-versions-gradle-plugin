@@ -4,10 +4,12 @@ plugins {
 
 interface UpdateVersionsPluginExtension {
 	Property<String> getIgnoreDependenciesRegexp()
+	Property<Boolean> getDowngradeUnresolvedDependencies()
 }
 
 def extension = project.extensions.create("updateVersions", UpdateVersionsPluginExtension)
 extension.ignoreDependenciesRegexp.convention("")
+extension.downgradeUnresolvedDependencies.convention(true)
 
 
 def getGradleFiles() {
@@ -62,13 +64,97 @@ def getResolvableVersion(dep) {
 	}
 }
 
-def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
+def resolveHighestVersionBelow(String group, String name, String version) {
+	try {
+		def conf = project.configurations.detachedConfiguration(
+				project.dependencies.create("${group}:${name}:(,${version})")
+				)
+
+		// Don't pollute dependency caches
+		conf.transitive = false
+
+		conf.resolutionStrategy.componentSelection {
+			all { selection ->
+				if (isNonStable(selection)) {
+					selection.reject("non-stable")
+				}
+			}
+		}
+
+		def resolved = conf.resolvedConfiguration.firstLevelModuleDependencies
+		if (resolved.isEmpty()) {
+			return null
+		}
+
+		// Resolving the dependency graph above only confirms metadata/POM exists - it doesn't
+		// force the jar artifact itself to be fetched, so double check with canResolveDependency
+		// the same way getResolvableVersion does for the "outdated" bucket.
+		def candidate = resolved.first().module.id.version
+		return canResolveDependency(group, name, candidate) ? candidate : null
+	} catch (Exception e) {
+		logger.info("Cannot resolve a version below ${group}:${name}:${version}: ${e.message}")
+		return null
+	}
+}
+
+def emojiFor(String kind) {
+	kind == "downgrade" ? "⬇️" : "📦"
+}
+
+def buildRewritePlan(dep, newVersion, String kind) {
+	if (isPluginMarker(dep)) {
+		def pluginId = getPluginId(dep)
+		return [
+			kind          : kind,
+			prettyPrint   : "plugin ${pluginId}:${dep.version} -> ${newVersion}",
+			fullCoordinate: "${dep.group}:${dep.name}:${dep.version}",
+			newVersion    : newVersion,
+			fromPatterns  : [
+				// Groovy DSL
+				"id\\s+['\"]${pluginId}['\"]\\s+version\\s+['\"]${dep.version}['\"](\\s+apply\\s+false)?",
+				// Kotlin DSL
+				"id\\(\\s*['\"]${pluginId}['\"]\\s*\\)\\s+version\\s+['\"]${dep.version}['\"](\\s+apply\\s+false)?"
+			],
+			toGroovy      : "id \"${pluginId}\" version \"${newVersion}\"",
+			toKotlin      : "id(\"${pluginId}\") version \"${newVersion}\""
+		]
+	} else {
+		return [
+			kind          : kind,
+			prettyPrint   : "${dep.group}:${dep.name}:${dep.version} -> ${newVersion}",
+			fullCoordinate: "${dep.group}:${dep.name}:${dep.version}",
+			newVersion    : newVersion,
+			fromPatterns: [
+				// Flexible pattern for 'group:name:version' in single or double quotes
+				"['\"]\\s*${dep.group}:${dep.name}:${dep.version}\\s*['\"]",
+				// Flexible pattern for map notation: group: '...', name: '...', version: '...'
+				"group:\\s*['\"]${dep.group}['\"],\\s*name:\\s*['\"]${dep.name}['\"],\\s*version:\\s*['\"]${dep.version}['\"]"
+			],
+			toGroovy      : "\"${dep.group}:${dep.name}:${newVersion}\"",
+			toKotlin      : "\"${dep.group}:${dep.name}:${newVersion}\""
+		]
+	}
+}
+
+def filterToRewritablePlans(plans) {
 	def gradleFiles = getGradleFiles()
 	def fileContents = gradleFiles.collectEntries { file ->
 		[(file): file.text]
 	}
 
-	dependencies
+	plans.findAll { plan ->
+		fileContents.any { file, content ->
+			plan.fromPatterns.any { pattern ->
+				def found = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL).matcher(content).find()
+				logger.info("Checking if file ${file.name} content matches pattern ${pattern} found? ${found}")
+				found
+			}
+		}
+	}
+}
+
+def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
+	def plans = dependencies
 			.collect { dep ->
 				[
 					d: dep,
@@ -79,52 +165,58 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 			.findAll { info ->
 				!"${info.d.group}:${info.d.name}:${info.d.version}".matches(ignoreDependenciesRegexp)
 			}
-			.collect { info ->
-				if (isPluginMarker(info.d)) {
-					def pluginId = getPluginId(info.d)
-					return [
-						prettyPrint   : "plugin ${pluginId}:${info.d.version} -> ${info.newVersion}",
-						fullCoordinate: "${info.d.group}:${info.d.name}:${info.d.version}",
-						newVersion    : info.newVersion,
-						fromPatterns  : [
-							// Groovy DSL
-							"id\\s+['\"]${pluginId}['\"]\\s+version\\s+['\"]${info.d.version}['\"](\\s+apply\\s+false)?",
-							// Kotlin DSL
-							"id\\(\\s*['\"]${pluginId}['\"]\\s*\\)\\s+version\\s+['\"]${info.d.version}['\"](\\s+apply\\s+false)?"
-						],
-						toGroovy      : "id \"${pluginId}\" version \"${info.newVersion}\"",
-						toKotlin      : "id(\"${pluginId}\") version \"${info.newVersion}\""
-					]
-				} else {
-					return [
-						prettyPrint   : "${info.d.group}:${info.d.name}:${info.d.version} -> ${info.newVersion}",
-						fullCoordinate: "${info.d.group}:${info.d.name}:${info.d.version}",
-						newVersion    : info.newVersion,
-						fromPatterns: [
-							// Flexible pattern for 'group:name:version' in single or double quotes
-							"['\"]\\s*${info.d.group}:${info.d.name}:${info.d.version}\\s*['\"]",
-							// Flexible pattern for map notation: group: '...', name: '...', version: '...'
-							"group:\\s*['\"]${info.d.group}['\"],\\s*name:\\s*['\"]${info.d.name}['\"],\\s*version:\\s*['\"]${info.d.version}['\"]"
-						],
-						toGroovy      : "\"${info.d.group}:${info.d.name}:${info.newVersion}\"",
-						toKotlin      : "\"${info.d.group}:${info.d.name}:${info.newVersion}\""
-					]
-				}
-			}
-			.findAll { info ->
-				fileContents.any { file, content ->
-					info.fromPatterns.any { pattern ->
-						def found = java.util.regex.Pattern.compile(pattern, java.util.regex.Pattern.DOTALL).matcher(content).find()
-						logger.info("Checking if file ${file.name} content matches pattern ${pattern} found? ${found}")
-						found
-					}
-				}
-			}
+			.collect { info -> buildRewritePlan(info.d, info.newVersion, "update") }
+
+	return filterToRewritablePlans(plans)
 }
 
-def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
+def getDowngradableDependencies(exceededDependencies, unresolvedDependencies, ignoreDependenciesRegexp) {
+	// A declared version that is numerically ahead of everything gradle-versions-plugin can find
+	// (e.g. the latest release got retracted/quarantined and no newer one exists yet) lands in
+	// "exceeded", not "unresolved" - gradle-versions-plugin classifies purely by comparing the
+	// declared version against the best version its own dynamic resolution found, regardless of
+	// whether the declared version itself actually resolves. "exceeded" entries already carry that
+	// best-found candidate as `.latest`, so we only need to double check it is actually resolvable
+	// (mirrors getResolvableVersion's use of canResolveDependency for the "outdated" bucket).
+	def fromExceeded = exceededDependencies
+			.findAll { it.group && it.name && it.version && it.latest }
+			.collect { dep ->
+				[
+					d: dep,
+					newVersion: canResolveDependency(dep.group, dep.name, dep.latest)
+					? dep.latest
+					: resolveHighestVersionBelow(dep.group, dep.name, dep.version)
+				]
+			}
+
+	// "unresolved" is reserved for coordinates gradle-versions-plugin couldn't find ANY version
+	// for at all (no candidate-version data whatsoever) - fall back to our own range resolution.
+	def fromUnresolved = unresolvedDependencies
+			.findAll { it.group && it.name && it.version }
+			.collect { dep ->
+				[
+					d: dep,
+					newVersion: resolveHighestVersionBelow(dep.group, dep.name, dep.version)
+				]
+			}
+
+	def plans = (fromExceeded + fromUnresolved)
+			.findAll { it.newVersion != null }
+			.findAll { info ->
+				!"${info.d.group}:${info.d.name}:${info.d.version}".matches(ignoreDependenciesRegexp)
+			}
+			.collect { info -> buildRewritePlan(info.d, info.newVersion, "downgrade") }
+
+	return filterToRewritablePlans(plans)
+}
+
+def handleDependencies(result, ignoreDependenciesRegexp, boolean downgradeUnresolvedDependencies, boolean writeChanges) {
 	def updatable = getUpdatableDependencies(result.outdated.dependencies, ignoreDependenciesRegexp)
-	if (updatable.isEmpty()) {
+	def downgradable = downgradeUnresolvedDependencies
+			? getDowngradableDependencies(result.exceeded.dependencies, result.unresolved.dependencies, ignoreDependenciesRegexp)
+			: []
+	def changes = updatable + downgradable
+	if (changes.isEmpty()) {
 		logger.lifecycle("""
         ☀️  All dependencies are up-to-date.
         """.stripIndent())
@@ -139,7 +231,7 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 			def updatedDeps = []
 			def isKotlin = file.name.endsWith(".kts")
 
-			updatable.each { dep ->
+			changes.each { dep ->
 				logger.info("Checking ${file.name} for updates to ${dep.prettyPrint}")
 				dep.fromPatterns.each { patternStr ->
 					logger.info("  Using pattern: ${patternStr}")
@@ -167,7 +259,8 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 							updatedDeps << [
 								file       : file.name,
 								prettyPrint : dep.prettyPrint,
-								newVersion : dep.newVersion
+								newVersion : dep.newVersion,
+								kind       : dep.kind
 							]
 
 							// Create new matcher with updated content
@@ -188,7 +281,8 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 							updatedDeps << [
 								file       : file.name,
 								prettyPrint : dep.prettyPrint,
-								newVersion : dep.newVersion
+								newVersion : dep.newVersion,
+								kind       : dep.kind
 							]
 						}
 					}
@@ -205,14 +299,14 @@ def handleDependencies(result, ignoreDependenciesRegexp, boolean writeChanges) {
 			logger.lifecycle("""
 			📝 Updated dependencies:
 
-            """.stripIndent() + allUpdatedDeps.collect { upd -> "  📦 ${upd.prettyPrint}" }.unique().sort().join("\n") + "\n")
+            """.stripIndent() + allUpdatedDeps.collect { upd -> "  ${emojiFor(upd.kind)} ${upd.prettyPrint}" }.unique().sort().join("\n") + "\n")
 		}
 	} else {
 		logger.lifecycle("""
 		📝 There are dependencies that can be updated:
         """.stripIndent())
 
-		logger.lifecycle(updatable.collect { "  📦 " + it.prettyPrint }.unique().sort().join("\n"))
+		logger.lifecycle(changes.collect { "  ${emojiFor(it.kind)} " + it.prettyPrint }.unique().sort().join("\n"))
 
 		logger.lifecycle("""
         
@@ -229,7 +323,7 @@ task showUpdateableDependencies(type: com.github.benmanes.gradle.versions.update
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), false)
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.downgradeUnresolvedDependencies.get(), false)
 	}
 }
 
@@ -238,7 +332,7 @@ task updateDependencies(type: com.github.benmanes.gradle.versions.updates.Depend
 	dependencyUpdates.gradleReleaseChannel = "current"
 	rejectVersionIf { isNonStable(it) }
 	outputFormatter = { result ->
-		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), true)
+		handleDependencies(result, extension.ignoreDependenciesRegexp.get(), extension.downgradeUnresolvedDependencies.get(), true)
 	}
 }
 

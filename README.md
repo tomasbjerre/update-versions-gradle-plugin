@@ -28,8 +28,18 @@ It can be tweaked:
 
 ```groovy
 updateVersions {
-  ignoreDependenciesRegexp.set("anything matching this regexp will be ignored")
-  resolveChecksInParallelThreads.set("2") // Is 2 by default
+  /*
+   * Dependencies matching `group:name:version` against this regexp 
+   * are left alone. Empty by default, so nothing is ignored.
+   */
+  ignoreDependenciesRegexp.set("regexp")
+  /*
+   * If a dependency's declared version cannot be resolved (for
+   * example a release was retracted or quarantined), fall back to
+   * the highest version below it that *can* be resolved, instead of
+   * leaving it broken. On by default.
+   */
+  downgradeUnresolvedDependencies.set(false)
 }
 ```
 
