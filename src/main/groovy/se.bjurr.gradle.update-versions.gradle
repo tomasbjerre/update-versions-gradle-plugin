@@ -207,15 +207,16 @@ def getUpdatableDependencies(dependencies, ignoreDependenciesRegexp) {
 }
 
 def getDowngradableDependencies(exceededDependencies, unresolvedDependencies, ignoreDependenciesRegexp) {
-	// A declared version that is numerically ahead of everything gradle-versions-plugin can find
-	// (e.g. the latest release got retracted/quarantined and no newer one exists yet) lands in
-	// "exceeded", not "unresolved" - gradle-versions-plugin classifies purely by comparing the
-	// declared version against the best version its own dynamic resolution found, regardless of
-	// whether the declared version itself actually resolves. "exceeded" entries already carry that
-	// best-found candidate as `.latest`, so we only need to double check it is actually resolvable
-	// (mirrors getResolvableVersion's use of canResolveDependency for the "outdated" bucket).
+	// "exceeded"/"unresolved" are gradle-versions-plugin's OWN classification, based on its
+	// separate dynamic ("+") resolution of "what's out there" - which goes through Gradle's
+	// dynamic-version cache (24h by default) and can be stale, reporting a "latest" that is
+	// actually older than a since-published declared version. Never trust the bucket alone:
+	// only act if the DECLARED version itself is confirmed broken by a fresh resolution check
+	// right now, otherwise a merely-stale cache would cause a real, currently-working version
+	// to be "fixed" into an older one for no reason.
 	def fromExceeded = exceededDependencies
 			.findAll { it.group && it.name && it.version && it.latest }
+			.findAll { dep -> !canResolveDependency(dep.group, dep.name, dep.version) }
 			.collect { dep ->
 				[
 					d: dep,
@@ -229,6 +230,7 @@ def getDowngradableDependencies(exceededDependencies, unresolvedDependencies, ig
 	// for at all (no candidate-version data whatsoever) - fall back to our own range resolution.
 	def fromUnresolved = unresolvedDependencies
 			.findAll { it.group && it.name && it.version }
+			.findAll { dep -> !canResolveDependency(dep.group, dep.name, dep.version) }
 			.collect { dep ->
 				[
 					d: dep,

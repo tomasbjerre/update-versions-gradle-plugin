@@ -90,6 +90,21 @@ class DowngradeUnresolvedDependencyFunctionalTest extends AbstractFunctionalTest
   }
 
   @Test
+  void doesNotDowngradeAGenuinelyResolvableDeclaredVersion() throws IOException {
+    // Regression test: "unlisted" declares 2.0.0, a real resolvable artifact, but
+    // maven-metadata.xml only advertises 1.0.0 - simulating a stale dynamic-version cache that
+    // makes gradle-versions-plugin classify 2.0.0 as "exceeded" (declared > its own "latest"
+    // finding of 1.0.0), even though 2.0.0 itself resolves fine right now. Must not be touched.
+    writeGroovyProject(
+        "dependencies {\n" + "  implementation \"com.example.fixture:unlisted:2.0.0\"\n" + "}\n");
+
+    BuildResult result = runner("updateDependencies").build();
+
+    assertThat(readBuildFile()).contains("\"com.example.fixture:unlisted:2.0.0\"");
+    assertThat(result.getOutput()).contains("All dependencies are up-to-date");
+  }
+
+  @Test
   void combinesUpgradesAndDowngradesInOneRun() throws IOException {
     writeGroovyProject(
         DOWNGRADE_ENABLED
