@@ -1,3 +1,9 @@
+## 1.7.1 (2026-07-30)
+
+### Bug Fixes
+
+-  trying to fix it doing downgrades when current version exists ([9a7eb](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/9a7eb1984dc9ee5) Tomas Bjerre)  
+
 ## 1.7.0 (2026-07-18)
 
 ### Features
