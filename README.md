@@ -4,6 +4,8 @@
 
 Uses [gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugin) to supply tasks that can show updateable dependencies and also update them.
 
+> **Note:** Starting with version `2.x.y`, this plugin requires Java 17 or later.
+
 ## Usage
 
 Apply it with:
