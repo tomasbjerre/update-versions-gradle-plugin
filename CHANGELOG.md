@@ -1,3 +1,12 @@
+## 2.0.0 (2026-09-13)
+
+### Breaking changes
+
+-  java 17 ([130a8](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/130a8a11b45a190) Tomas Bjerre)  
+
+### Dependency updates
+
+- update assertj-core to 3.27.7, junit-bom to latest 5.x ([76823](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/768235c0dcff051) Tomas Bjerre)  
 ## 1.7.1 (2026-07-30)
 
 ### Bug Fixes
