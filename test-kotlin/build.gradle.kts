@@ -8,7 +8,7 @@ dependencies {
 	/**
 	 * These should be updated by the plugin.
 	 */
-	implementation("se.bjurr.violations:violations-lib:1.0.0")
+	implementation("se.bjurr.violations:violations-lib:1.160.5")
 }
 
 repositories {
