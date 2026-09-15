@@ -27,3 +27,19 @@ javaExtension {
 test {
 	useJUnitPlatform()
 }
+
+// Verified with a scratch GradleRunner project: showUpdateableDependencies/updateDependencies
+// discard the configuration cache every run. Some of that is upstream (gradle-versions-plugin's
+// own DependencyUpdatesTask uses Task.project at execution time), and some is ours (the
+// outputFormatter closure captures the live Project to resolve candidate dependency versions).
+// Declare it honestly as unsupported rather than guessing "true" and risking the Portal
+// revoking the compatibility badge.
+gradlePlugin {
+	plugins.named("thePlugin") {
+		compatibility {
+			features {
+				configurationCache = false
+			}
+		}
+	}
+}
