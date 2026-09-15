@@ -1,3 +1,12 @@
+## 3.0.0 (2026-09-15)
+
+### Breaking changes
+
+-  rewrite plugin as a Java binary plugin for Gradle Plugin Portal publishing ([a8f20](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/a8f200e22806c31) Tomas Bjerre)  
+
+### Other changes
+
+
 ## 2.0.0 (2026-09-13)
 
 ### Breaking changes
