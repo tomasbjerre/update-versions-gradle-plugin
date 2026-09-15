@@ -1,3 +1,9 @@
+## 3.0.1 (2026-09-15)
+
+### Dependency updates
+
+- update dependency se.bjurr.gitchangelog:git-changelog-lib to v1.175.2 (#6) ([6f590](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/6f590a42f7ca5ee) renovate[bot])  
+- update dependency org.immutables:value to v2.12.2 (#5) ([ec4e2](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/ec4e2cdfeaa0ccb) renovate[bot])  
 ## 3.0.0 (2026-09-15)
 
 ### Breaking changes
