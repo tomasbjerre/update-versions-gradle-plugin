@@ -1,6 +1,7 @@
 # Update Versions Gradle Plugin
 
 [![Maven Central](https://img.shields.io/maven-central/v/se.bjurr.gradle.update-versions/se.bjurr.gradle.update-versions.gradle.plugin.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/se.bjurr.gradle.update-versions/se.bjurr.gradle.update-versions.gradle.plugin)
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/se.bjurr.gradle.update-versions)](https://plugins.gradle.org/plugin/se.bjurr.gradle.update-versions)
 
 Uses [gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugin) to supply tasks that can show updateable dependencies and also update them.
 
