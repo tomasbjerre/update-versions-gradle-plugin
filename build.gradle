@@ -2,14 +2,15 @@
  * Used when working with this plugin.
  */
 plugins {
-	id "groovy-gradle-plugin"
-	id "se.bjurr.gradle.bundle-jar"
+	id "java-gradle-plugin"
+	id "se.bjurr.gradle.bundle-gradle-binaryplugin"
 }
 
 /**
  * Dependencies needed by the plugin in src/main/groovy
  */
 dependencies {
+	implementation gradleApi()
 	implementation "com.github.ben-manes:gradle-versions-plugin:0.54.0"
 
 	testImplementation gradleTestKit()
