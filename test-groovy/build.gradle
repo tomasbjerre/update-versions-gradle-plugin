@@ -13,8 +13,8 @@ dependencies {
 	implementation "se.bjurr.gitchangelog:git-changelog-lib:1.0.0"
 
 	// This tests that there are 2 lines that are matched
-	compileOnly "org.immutables:value:2.11.2"
-	annotationProcessor "org.immutables:value:2.11.2"
+	compileOnly "org.immutables:value:2.12.2"
+	annotationProcessor "org.immutables:value:2.12.2"
 }
 
 repositories {
