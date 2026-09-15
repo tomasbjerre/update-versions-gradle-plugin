@@ -3,7 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/se.bjurr.gradle.update-versions/se.bjurr.gradle.update-versions.gradle.plugin.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/se.bjurr.gradle.update-versions/se.bjurr.gradle.update-versions.gradle.plugin)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/se.bjurr.gradle.update-versions)](https://plugins.gradle.org/plugin/se.bjurr.gradle.update-versions)
 
-Uses [gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugin) to supply tasks that can show updateable dependencies and also update them.
+Adds tasks that can show updateable dependencies and one that updates them. Using [gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugin).
 
 > **Note:** Starting with version `2.x.y`, this plugin requires Java 17 or later.
 
