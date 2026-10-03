@@ -1,3 +1,8 @@
+## 3.0.3 (2026-10-03)
+
+### Dependency updates
+
+- update plugin se.bjurr.gradle.bundle-gradle-binaryplugin to v2.4.1 (#13) ([8b05d](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/8b05dc268a8d0fb) renovate[bot])  
 ## 3.0.1 (2026-09-15)
 
 ### Dependency updates
