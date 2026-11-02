@@ -1,3 +1,9 @@
+## 3.0.4 (2026-10-20)
+
+### Dependency updates
+
+- update dependency gradle to v9.8.2 (#16) ([82b78](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/82b789e4041d28c) renovate[bot])  
+- update dependency gradle to v9.8.1 (#15) ([69e5c](https://github.com/tomasbjerre/update-versions-gradle-plugin/commit/69e5c61b1e0e053) renovate[bot])  
 ## 3.0.3 (2026-10-03)
 
 ### Dependency updates
